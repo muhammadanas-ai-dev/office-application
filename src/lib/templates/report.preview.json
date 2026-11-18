@@ -1,0 +1,130 @@
+[
+  {
+    "style": "Title",
+    "text": "[Report Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Company Name]  |  [Date]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Executive Summary"
+  },
+  {
+    "style": "Normal",
+    "text": "This report summarises [what the report covers] and its main findings. The headline result is [one sentence stating the most important finding], and the recommendations at the end say what should happen next."
+  },
+  {
+    "style": "Heading1",
+    "text": "Findings"
+  },
+  {
+    "style": "Heading2",
+    "text": "Finding 1: [Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "Describe the first finding here: what was observed, what the numbers say, and why it matters. Keep the evidence and the interpretation in the same paragraph so the reader does not have to guess the connection."
+  },
+  {
+    "style": "Heading2",
+    "text": "Finding 2: [Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "Describe the second finding here, in the same pattern: the evidence, then what it means."
+  },
+  {
+    "style": "Heading2",
+    "text": "Quarterly Results"
+  },
+  {
+    "style": "Normal",
+    "text": "Quarter"
+  },
+  {
+    "style": "Normal",
+    "text": "Revenue"
+  },
+  {
+    "style": "Normal",
+    "text": "Growth"
+  },
+  {
+    "style": "Normal",
+    "text": "Q1"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "[%]"
+  },
+  {
+    "style": "Normal",
+    "text": "Q2"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "[%]"
+  },
+  {
+    "style": "Normal",
+    "text": "Q3"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "[%]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Conclusion"
+  },
+  {
+    "style": "Normal",
+    "text": "In short, [restate the main finding in one or two sentences]. The evidence points to [the conclusion the reader should take away]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Recommendations"
+  },
+  {
+    "style": "ListNumber",
+    "text": "1. [First recommended action]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "2. [Second recommended action]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "3. [Third recommended action]."
+  },
+  {
+    "style": "Table",
+    "text": "Quarter | Revenue | Growth"
+  },
+  {
+    "style": "Table",
+    "text": "Q1 | [Amount] | [%]"
+  },
+  {
+    "style": "Table",
+    "text": "Q2 | [Amount] | [%]"
+  },
+  {
+    "style": "Table",
+    "text": "Q3 | [Amount] | [%]"
+  }
+]

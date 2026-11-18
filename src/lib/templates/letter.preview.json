@@ -1,0 +1,70 @@
+[
+  {
+    "style": "Normal",
+    "text": "[Your Full Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your Address]"
+  },
+  {
+    "style": "Normal",
+    "text": "[City, Postal Code]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your Email]  |  [Your Phone]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Recipient Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Recipient Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Company Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Company Address]"
+  },
+  {
+    "style": "Normal",
+    "text": "Subject: [Subject of the letter]"
+  },
+  {
+    "style": "Normal",
+    "text": "Dear [Recipient Name],"
+  },
+  {
+    "style": "Normal",
+    "text": "I am writing to [state the purpose of the letter in one clear sentence \u2014 for example, to apply for a role, to request information, or to follow up on a previous conversation]."
+  },
+  {
+    "style": "Normal",
+    "text": "In this paragraph, give the details that support your purpose: the background, the facts, and anything the reader needs to understand the request. Keep it short and specific \u2014 one idea per paragraph."
+  },
+  {
+    "style": "Normal",
+    "text": "In the final paragraph, say clearly what you would like the reader to do next, and thank them for their time and consideration."
+  },
+  {
+    "style": "Normal",
+    "text": "Sincerely,"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your Full Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your Title]"
+  }
+]

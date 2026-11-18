@@ -1,0 +1,22 @@
+-- Forma Office — test seed (local / test environments only).
+--
+-- Do NOT run against production. This file documents the seed data
+-- shape; real test users are created by the admin Auth API (see
+-- supabase/tests/rls-live.test.ts), because auth users cannot be
+-- inserted by plain SQL in Supabase.
+--
+-- After creating two test users (A and B) via the admin API, the
+-- equivalent seed rows are:
+--
+--   insert into public.profiles (id, display_name)
+--   values ('<user-a-id>', 'Test User A'), ('<user-b-id>', 'Test User B');
+--
+--   insert into public.workspaces (id, name, owner_id)
+--   values ('<workspace-a-id>', 'Test workspace A', '<user-a-id>');
+--
+--   insert into public.workspace_members (workspace_id, user_id, role, status)
+--   values ('<workspace-a-id>', '<user-a-id>', 'owner', 'active');
+--
+-- The app itself provisions these rows on sign-up/sign-in via
+-- ensureProfileAndWorkspace (src/features/auth/provision.ts).
+select 'seed is documentation-only; create test users via the admin Auth API' as note;

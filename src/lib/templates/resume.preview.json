@@ -1,0 +1,86 @@
+[
+  {
+    "style": "Title",
+    "text": "[Your Full Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[email@example.com]  |  [phone number]  |  [City, Country]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Professional Summary"
+  },
+  {
+    "style": "Normal",
+    "text": "A results-driven software engineer with experience building reliable products and shipping them to users. Skilled at turning unclear requirements into working software, and at explaining technical trade-offs in plain language."
+  },
+  {
+    "style": "Heading1",
+    "text": "Experience"
+  },
+  {
+    "style": "Heading2",
+    "text": "Software Engineer \u2014 [Company Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Start date] \u2014 [End date]  |  [City, Country]"
+  },
+  {
+    "style": "ListBullet",
+    "text": "Built and maintained the core product, improved reliability, and worked directly with users to turn feedback into the next release."
+  },
+  {
+    "style": "ListBullet",
+    "text": "Led a small project from design to launch, including testing and documentation."
+  },
+  {
+    "style": "Heading2",
+    "text": "Junior Developer \u2014 [Company Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Start date] \u2014 [End date]  |  [City, Country]"
+  },
+  {
+    "style": "ListBullet",
+    "text": "Shipped features, fixed bugs, and learned the team's stack by working through real tickets."
+  },
+  {
+    "style": "Heading1",
+    "text": "Education"
+  },
+  {
+    "style": "Normal",
+    "text": "[Degree Name] \u2014 [University Name], [Year]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Skills"
+  },
+  {
+    "style": "Normal",
+    "text": "Programming"
+  },
+  {
+    "style": "Normal",
+    "text": "[Language 1], [Language 2], [Language 3]"
+  },
+  {
+    "style": "Normal",
+    "text": "Tools"
+  },
+  {
+    "style": "Normal",
+    "text": "[Tool 1], [Tool 2], [Tool 3]"
+  },
+  {
+    "style": "Table",
+    "text": "Programming | [Language 1], [Language 2], [Language 3]"
+  },
+  {
+    "style": "Table",
+    "text": "Tools | [Tool 1], [Tool 2], [Tool 3]"
+  }
+]

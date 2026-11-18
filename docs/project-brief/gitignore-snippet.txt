@@ -1,0 +1,10 @@
+# Add these entries to the repository .gitignore (do not replace existing rules).
+.env
+.env.*
+!.env.example
+!.env.*.example
+.vercel
+node_modules
+.next
+playwright-report
+test-results

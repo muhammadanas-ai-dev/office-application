@@ -1,0 +1,126 @@
+// PDF form-builder page (Phase B, feature 5).
+//
+// One page per PDF document: the pages render in the browser
+// (PDF.js) and a side panel builds the form — pick a field type,
+// click on a page to place it, set its name and options, and add
+// it. A field list shows every field already on the PDF, with a
+// remove button. Adding or removing a field creates a new version
+// — the original file is never overwritten. The document row and
+// field list come through the signed-in user's client (RLS); the
+// routes validate again server-side.
+//
+// A PDF with no form fields yet is a blank canvas, not an error:
+// the first field added creates the form. An XFA PDF is refused
+// with a clear message.
+import { redirect } from "next/navigation";
+import { FileWarning } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { DOCUMENTS_BUCKET } from "@/lib/storage";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PdfFormBuilderClient } from "@/components/pdf-form-builder/pdf-form-builder-client";
+import { countPdfPages } from "@/lib/pdf-tools.server";
+import {
+  listPdfFormFields,
+  type PdfFormField,
+} from "@/lib/pdf-form-builder.server";
+import Link from "next/link";
+
+function BackToFiles() {
+  return (
+    <Link
+      href="/files"
+      className="inline-flex h-9 items-center rounded-lg bg-[#3159c9] px-3 text-sm font-medium text-white hover:bg-[#2a4cab]"
+    >
+      Back to files
+    </Link>
+  );
+}
+
+export default async function PdfFormBuilderPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
+    redirect(
+      `/auth/login?next=/documents/${encodeURIComponent(id)}/pdf-builder`
+    );
+
+  const { data: document, error } = await supabase
+    .from("documents")
+    .select("id, title, workspace_id, file_path, mime_type, version")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    console.error("[pdf-builder page]", error);
+    return (
+      <EmptyState
+        icon={FileWarning}
+        title="Could not load this document"
+        description="The document could not be read. Check the setup and try again."
+        action={<BackToFiles />}
+      />
+    );
+  }
+  if (!document) {
+    return (
+      <EmptyState
+        icon={FileWarning}
+        title="Document not found"
+        description="This document does not exist, or you do not have access to it."
+        action={<BackToFiles />}
+      />
+    );
+  }
+  if (!document.file_path || document.mime_type !== "application/pdf") {
+    return (
+      <EmptyState
+        icon={FileWarning}
+        title="Form building only works on PDF files"
+        description="Open a PDF document to add form fields to it."
+        action={<BackToFiles />}
+      />
+    );
+  }
+
+  // Page count and field list, read from the file itself (best
+  // effort — the routes validate server-side even if this fails).
+  let pageCount: number | null = null;
+  let fields: PdfFormField[] = [];
+  let fieldsError: string | null = null;
+  try {
+    const admin = createAdminClient();
+    const { data: blob } = await admin.storage
+      .from(DOCUMENTS_BUCKET)
+      .download(document.file_path);
+    if (blob) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      pageCount = await countPdfPages(bytes);
+      fields = await listPdfFormFields(bytes);
+    }
+  } catch (error) {
+    console.error("[pdf-builder page] file read", error);
+    fieldsError =
+      error instanceof Error ? error.message : "Could not read this PDF.";
+  }
+
+  return (
+    <PdfFormBuilderClient
+      document={{
+        id: document.id,
+        title: document.title,
+        version: document.version,
+      }}
+      pageCount={pageCount}
+      initialFields={fields}
+      fieldsError={fieldsError}
+    />
+  );
+}
