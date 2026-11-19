@@ -2,7 +2,6 @@
 
 import {
   Clock,
-  CreditCard,
   FileImage,
   FolderOpen,
   Home,
@@ -20,6 +19,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { FormaLogo } from "@/components/brand/forma-logo";
+import { DocumentTabs } from "@/components/layout/document-tabs";
 import { UserMenu } from "@/components/layout/user-menu";
 import { cn } from "@/lib/utils";
 
@@ -27,13 +27,12 @@ const NAV_ITEMS = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/recent", label: "Recent", icon: Clock },
   { href: "/files", label: "My files", icon: FolderOpen },
-  { href: "/shared", label: "Shared with me", icon: Users },
+  { href: "/shared", label: "Shared", icon: Users },
   { href: "/starred", label: "Starred", icon: Star },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/images-to-pdf", label: "Images to PDF", icon: FileImage },
   { href: "/trash", label: "Trash", icon: Trash2 },
   { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/plan", label: "Plan and usage", icon: CreditCard },
 ] as const;
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -174,7 +173,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           <UserMenu />
         </header>
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          <DocumentTabs />
+          {children}
+        </main>
       </div>
     </div>
   );

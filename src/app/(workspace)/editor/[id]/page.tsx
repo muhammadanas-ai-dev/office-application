@@ -14,6 +14,7 @@ import {
 import { getEditorDocumentType } from "@/lib/editor";
 import { getDocumentServerUrl } from "@/lib/editor.server";
 import { EditorClient } from "@/components/editor/editor-client";
+import { RegisterOpenDocument } from "@/components/layout/document-tabs";
 import { FileWarning } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -138,6 +139,7 @@ export default async function EditorPage({
 
   return (
     <div className="flex h-full flex-col gap-3">
+      <RegisterOpenDocument id={document.id} title={document.title} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold text-[#202b3c]">

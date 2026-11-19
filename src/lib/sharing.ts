@@ -73,3 +73,22 @@ export function getShareUrl(token: string): string {
 export function shareExpiryLabel(choice: ShareExpiryChoice): string {
   return SHARE_EXPIRIES.find((e) => e.value === choice)?.label ?? choice;
 }
+
+/** The status of a share link for the Shared page: a revoked
+ *  link is "Revoked", an expired one is "Expired", anything
+ *  else is "Live". */
+export function shareStatusLabel(share: {
+  expiresAt: Date | string | null;
+  revokedAt: Date | string | null;
+}): "Live" | "Expired" | "Revoked" {
+  if (share.revokedAt !== null) return "Revoked";
+  if (isShareExpired(share.expiresAt)) return "Expired";
+  return "Live";
+}
+
+/** Format an expiry for the Shared page: "Never expires" when
+ *  there is none, otherwise the date. */
+export function formatShareExpiry(expiresAt: Date | string | null): string {
+  if (expiresAt === null) return "Never expires";
+  return `Expires ${new Date(expiresAt).toLocaleDateString()}`;
+}

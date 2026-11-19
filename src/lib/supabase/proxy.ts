@@ -37,6 +37,7 @@ const PROTECTED_PREFIXES = [
 const PUBLIC_API_PREFIXES = [
   "/api/supabase-status",
   "/api/db-status",
+  "/api/health",
   "/api/editor/file",
   "/api/editor/callback",
 ];

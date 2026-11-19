@@ -223,6 +223,30 @@ describe("extractPdfText", () => {
     expect(text).toContain("invisible");
   });
 
+  it("keeps words on one visual line in reading order when their baselines differ", async () => {
+    // OCR word boxes on one visual line sit at two slightly
+    // different baselines (taller words reach lower, so their
+    // baseline y is lower). Sorting all runs by y first would
+    // put every word on the higher baseline before every word
+    // on the lower one — scrambling the reading order. The
+    // line groups by baseline tolerance and then sorts by x,
+    // so the words stay left to right.
+    const input = await basePdf();
+    const words = [
+      word("The", 50, 100, 40, 154),
+      word("quick", 100, 100, 50, 192),
+      word("brown", 160, 100, 55, 154),
+      word("fox", 225, 100, 35, 154),
+      word("jumps", 270, 100, 50, 192),
+    ];
+    const { bytes } = await embedOcrWordsInPdf(input, [
+      { pageNumber: 1, words },
+    ]);
+    const { text } = await extractPdfText(bytes);
+    const firstLine = text.split("\n")[0];
+    expect(firstLine).toBe("The quick brown fox jumps");
+  });
+
   it("returns empty text for a PDF with no text layer", async () => {
     const doc = await PDFDocument.create();
     doc.addPage([612, 792]);

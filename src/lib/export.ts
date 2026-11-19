@@ -173,4 +173,12 @@ export class FixedWindowRateLimiter {
       retryAfterMs: bucket.start + this.windowMs - now,
     };
   }
+
+  /** Forget a key's counter (a successful auth attempt clears
+   *  the failures that came before it, so a user who eventually
+   *  remembers their password is not locked out by their own
+   *  earlier mistypes). */
+  reset(key: string): void {
+    this.buckets.delete(key);
+  }
 }

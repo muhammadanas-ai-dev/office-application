@@ -163,6 +163,63 @@ export async function listShares(
   return (shares ?? []) as ShareRow[];
 }
 
+/** One share link with the document it belongs to (for the
+ *  Shared page — the links the user created, across all their
+ *  documents). */
+export interface MyShare {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  expiresAt: string | null;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+/**
+ * List every share link the user created, newest first, with
+ * the document title. Only the user's own links (RLS enforces
+ * it — the query is by created_by). The token itself is NOT
+ * returned (the database only holds its hash, and the link
+ * was shown once at creation), so the page shows the document,
+ * the expiry and the status, not the link.
+ */
+export async function listMyShares(
+  userClient: SharingClient,
+  userId: string
+): Promise<MyShare[]> {
+  const { data: shares, error } = await userClient
+    .from("document_shares")
+    .select(
+      "id, document_id, expires_at, created_at, revoked_at, documents!inner(title)"
+    )
+    .eq("created_by", userId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    if (
+      error.code === "PGRST204" ||
+      error.code === "PGRST205" ||
+      error.code === "42703"
+    ) {
+      throw new PdfEditError(
+        400,
+        "Sharing is not set up yet — run forma-shares-migration.sql in the Supabase Dashboard SQL Editor, then try again."
+      );
+    }
+    throw new PdfEditError(500, "Could not load the share links.");
+  }
+  return (shares ?? []).map((row) => {
+    const doc = row.documents as unknown as { title?: string } | null;
+    return {
+      id: row.id as string,
+      documentId: row.document_id as string,
+      documentTitle: doc?.title ?? "Untitled document",
+      expiresAt: row.expires_at as string | null,
+      createdAt: row.created_at as string,
+      revokedAt: row.revoked_at as string | null,
+    };
+  });
+}
+
 /** Revoke a share link (it stops working immediately). */
 export async function revokeShare(
   userClient: SharingClient,

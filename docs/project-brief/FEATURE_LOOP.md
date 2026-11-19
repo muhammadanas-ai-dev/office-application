@@ -55,12 +55,12 @@ the owner's instruction of 2026-11-18; Supabase Storage stays
 | 7 | PDF ↔ image (export pages to PNG/JPG, images to PDF) | **Done (Day 22, live e2e 20/20)** |
 | 8 | Versions UI | **Done (Day 23, live e2e 20/20)** |
 | 9 | Settings / preferences | **Done (Day 24, unit 312/312, live e2e 14/14)** |
-| 10 | Sharing (single-user, local) | **Done (Day 25, the link half — unit 319/319; live e2e pending the migration)** |
-| 11 | Compatibility test corpus | Next |
+| 10 | Sharing (single-user, local) | **Done (Day 25, the link half — unit 319/319; live e2e 23/23 after the owner applied the corrected migration)** |
+| 11 | Compatibility test corpus | **Done (Day 26 — unit 338/338; the runner 56 passed, 0 failed, 22 skipped (docserver))** |
 | 10 | Sharing (single-user, local) | Not started |
 | 11 | Compatibility test corpus | Not started |
-| 12 | Hardening (byte-signature validation, auth rate limiting, monitoring, backup/restore, privacy disclosures, licence audit) | Not started |
-| 13 | UX gaps (dead sidebar controls, drag-and-drop upload, responsive layout, document tabs) | Not started |
+| 12 | Hardening (byte-signature validation, auth rate limiting, monitoring, backup/restore, privacy disclosures, licence audit) | **Done (Day 27 — unit 369/369; live e2e 11/11)** |
+| 13 | UX gaps (dead sidebar controls, drag-and-drop upload, responsive layout, document tabs) | **Done (Day 28 — unit 382/384; live e2e 9/9)** |
 
 E-signatures are deferred (needs a legal/verification decision).
 No billing until merchant eligibility/tax/compliance is verified.

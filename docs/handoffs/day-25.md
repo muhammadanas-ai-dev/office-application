@@ -163,18 +163,21 @@ first (14/14, see the Day 24 handoff §4).
   format (32 hex, unique), the hash (deterministic, 64 hex,
   not the token), the expiry choices (1d/7d/30d/never),
   the expiry check, the URL.
-- **Live e2e: 3/4 (`scripts/e2e-sharing-test.mjs`).**
-  Without the migration, the manage page shows the setup
-  notice; signed-out gets 307 on the manage page and on the
-  create route. **The only failure is the migration check
-  itself — the owner has NOT applied
-  `forma-shares-migration.sql` yet; the share
-  create/open/download/revoke checks were correctly skipped.
-  Re-run the harness after he applies it** (it then creates
-  a 7-day share via the API, opens `/s/<token>` anonymously,
-  downloads the bytes (they match the upload), revokes it,
-  checks an expired share and a bad token, user B isolation,
-  and a never-expiring share).
+- **Live e2e: 23/23 (`scripts/e2e-sharing-test.mjs`) — FULL
+  PASS after the owner applied the corrected migration
+  (re-run 2026-11-19).** The migration check passes; the
+  manage page shows the create form; a 7-day share is
+  created via the API; the public page loads anonymously
+  and shows the title + Download; the download redirects to
+  a signed URL and the bytes match the upload; listing
+  shows the link; a bad expiry is refused (400); user B
+  gets 404 on create/list/revoke; revoking works and the
+  revoked link's page + download both refuse (revoked /
+  404); an expired link's page + download both refuse
+  (expired / 404); a bad token's page + download both
+  refuse (not valid / 404); a never-expiring share has a
+  null expiry; signed-out gets 307 on the manage page and
+  the create route. **Day 25 is fully closed.**
 - **Typecheck, lint, build: pass.** Prettier applied to the
   Day 25 files.
 

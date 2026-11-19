@@ -225,7 +225,71 @@ Updated: 2026-11-18 (Day 12)
   `export const dynamic = "force-dynamic"`** — it is not
   compatible with `nextConfig.cacheComponents` (the build
   fails); pages that read cookies or the current time are
-  already dynamic.
+  already dynamic. The migration's first version called the
+  RLS helpers with two arguments — the helpers take ONE
+  (the workspace id; they read `auth.uid()` internally) and
+  `is_workspace_owner_or_admin` does not exist at all — so
+  the owner's run failed with 42883; fixed in commit a633190
+  to the Day 3 patterns.
+- **Compatibility corpus limits (Day 26).** The corpus has
+  19 files and the runner reports 56 passed, 0 failed,
+  22 skipped (78 total) — the 22 skips are the docserver
+  checks (pdf-export + round-trip) while the docserver is
+  down, so round-trip and PDF export are still unproven.
+  No pivot table in the XLSX (openpyxl cannot create one)
+  and no animation in the PPTX (python-pptx has no animation
+  API) — both are recorded as gaps, not faked. The "huge
+  file" edge case is a 30-page PDF, not a 50 MB file.
+  English-only in v1. No UI page in v1 (the corpus is a
+  developer/testing tool, run as `node
+  scripts/corpus-test.mjs`). The corpus files are binaries,
+  so they do NOT go through the GitHub snapshot push — the
+  generator (`scripts/generate-corpus.py`) is pushed, so
+  they are regenerable. The /tmp fixtures now have a
+  committed rebuild script (`scripts/rebuild-fixtures.py`)
+  so the next VM reset is one command. The script also rebuilds
+  `/tmp/e2e/scanned.pdf` (the 2-page image-only PDF the Day 21
+  harness needs).
+- **Hardening limits (Day 27).** The byte-signature check does
+  not distinguish DOC from XLS from PPT (they share the OLE
+  magic) and does not verify a ZIP is well-formed beyond the
+  magic + the inner marker; a truncated PDF still passes the
+  magic check (the failure comes later, when the PDF is
+  parsed). No malware scan (that needs an external scanner).
+  The auth limiter is per-process in-memory (like every other
+  limiter); Supabase Auth also rate-limits server-side. No
+  external error tracker (Sentry) — the health endpoint is
+  the monitoring hook and the JSON log is what it feeds on.
+  The backup is metadata-only via REST (no `pg_dump` from
+  this VM — the runtime egress policy blocks direct Postgres);
+  the document FILES need the Storage export. The privacy page
+  is not a legal review and the licence audit is an inventory,
+  not a legal opinion. **The extract-text word-order bug is
+  fixed** (Day 21): OCR word boxes on one visual line sit at
+  two slightly different baselines, and sorting all runs by y
+  first scrambled the reading order — the line now groups by
+  baseline tolerance and sorts by x within the line.
+- **UX gaps limits (Day 28).** The Shared page shows the
+  share links the user created, not documents others shared
+  with them (multi-user sharing stays skipped). The full
+  link cannot be shown again — the token is returned once,
+  at creation, and the database only holds its hash — so
+  if the link is lost, the user revokes it and creates a
+  new one. Drag-and-drop uploads one file per action call
+  (the action's shape), with no per-file progress bar, and
+  a dropped folder is not expanded. Document tabs reload
+  the editor when switching (the editor is an ONLYOFFICE
+  iframe, so its state is per document); at most 10 tabs;
+  a tab's title is the document title at the time it was
+  opened (it does not live-update on a rename). The
+  responsive layout was verified by a class audit (the
+  shell's mobile drawer, flex-wrap, min-w-0, truncate and
+  responsive padding) — a live 390px render was not possible
+  because the local Chromium is blocked by the managed-browser
+  policy ("Hatch WebGL domain policy is required") and the
+  cloud browser cannot reach localhost. The /plan route still
+  exists (it is unreachable from the nav; deleting it is a
+  follow-up if the owner wants it gone entirely).
 - **Preferences limits (Day 24).** Three preferences only
   (OCR default language, image export format, image export
   DPI). No locale preference (the app has no i18n — a locale

@@ -82,30 +82,37 @@ export async function extractPdfText(
   for (let page = 1; page <= pageCount; page++) {
     const runs = await listPdfTextRuns(bytes, page);
     // Group into lines by baseline y (top to bottom), runs
-    // within a line sorted left to right.
+    // within a line sorted left to right. A line's y is the
+    // running average of its runs — the OCR word boxes on one
+    // visual line sit at slightly different heights, and a
+    // fixed reference y would split the line (and scramble
+    // the word order) once the drift passed half a font size.
     const sorted = [...runs].sort((a, b) => b.y - a.y || a.x - b.x);
-    const lines: string[] = [];
-    let currentY: number | null = null;
-    let currentLine: string[] = [];
-    const flush = () => {
-      if (currentLine.length > 0) {
-        lines.push(currentLine.join(" "));
-        currentLine = [];
-      }
-    };
+    const lines: {
+      y: number;
+      words: { x: number; text: string }[];
+    }[] = [];
     for (const run of sorted) {
       if (!run.text || run.text.trim() === "") continue;
-      if (currentY === null || Math.abs(run.y - currentY) <= run.fontSize / 2) {
-        currentY = currentY ?? run.y;
-        currentLine.push(run.text.trim());
+      const last = lines[lines.length - 1];
+      if (last && Math.abs(run.y - last.y) <= run.fontSize / 2) {
+        last.words.push({ x: run.x, text: run.text.trim() });
+        last.y =
+          (last.y * (last.words.length - 1) + run.y) / last.words.length;
       } else {
-        flush();
-        currentY = run.y;
-        currentLine.push(run.text.trim());
+        lines.push({
+          y: run.y,
+          words: [{ x: run.x, text: run.text.trim() }],
+        });
       }
     }
-    flush();
-    pages.push({ page, text: lines.join("\n") });
+    const lineTexts = lines.map((line) =>
+      line.words
+        .sort((a, b) => a.x - b.x)
+        .map((w) => w.text)
+        .join(" ")
+    );
+    pages.push({ page, text: lineTexts.join("\n") });
   }
   return { pages, text: pages.map((p) => p.text).join("\n\n") };
 }

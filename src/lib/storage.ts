@@ -7,10 +7,11 @@
 // uuid is denied by those policies (fail-closed).
 //
 // Validation runs server-side in the upload action; the browser's
-// `accept` attribute is only a hint. Only the extension and the
-// declared MIME type are checked here — a full byte-signature
-// (magic-number) check is a Day 12 hardening item, noted in
-// docs/known-limitations.md.
+// `accept` attribute is only a hint. The extension and the declared
+// MIME type are checked here; the file's actual bytes are checked
+// against the extension by `validateFileSignature`
+// (src/lib/file-signatures.ts, Day 27 hardening) in the upload
+// action, before anything is written to Storage.
 
 export const DOCUMENTS_BUCKET = "documents";
 

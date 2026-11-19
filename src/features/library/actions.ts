@@ -8,6 +8,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { validateFileSignature } from "@/lib/file-signatures";
+import { logError } from "@/lib/log";
 import {
   ALLOWED_UPLOAD_TYPES,
   buildStoragePath,
@@ -60,7 +62,7 @@ function toActionError(error: unknown): ActionResult {
   ) {
     return { ok: false, error: SETUP_PENDING_ERROR };
   }
-  console.error("[library action]", error);
+  logError("library.action", error);
   return { ok: false, error: GENERIC_ERROR };
 }
 
@@ -795,7 +797,7 @@ async function removeDocumentFiles(
       .from(DOCUMENTS_BUCKET)
       .remove(paths);
     if (removeError) {
-      console.error("[library action] storage cleanup failed", removeError);
+      logError("library.storageCleanup", removeError);
     }
   }
 }
@@ -852,6 +854,16 @@ export async function uploadDocument(
     }
     const validation = validateUpload(file);
     if (!validation.ok) return { ok: false, error: validation.error };
+    // The byte-signature check (Day 27 hardening): the extension
+    // and the declared MIME type are attacker-controlled, so the
+    // file's actual bytes must match the extension it claims.
+    // A PNG renamed to .pdf is refused here, before anything is
+    // written to Storage or the database.
+    const signature = validateFileSignature(
+      new Uint8Array(await file.arrayBuffer()),
+      validation.extension
+    );
+    if (!signature.ok) return { ok: false, error: signature.error };
 
     const { supabase, user, workspace } = await authedWorkspace();
     if (!(await requireEditorRole(supabase, workspace.id, user.id))) {

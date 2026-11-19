@@ -4,12 +4,14 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SHARE_EXPIRY,
   expiresAtForChoice,
+  formatShareExpiry,
   getShareUrl,
   hashShareToken,
   isShareExpired,
   isShareExpiryChoice,
   newShareToken,
   shareExpiryLabel,
+  shareStatusLabel,
 } from "@/lib/sharing";
 
 describe("newShareToken", () => {
@@ -81,5 +83,45 @@ describe("getShareUrl and shareExpiryLabel", () => {
     expect(shareExpiryLabel("7d")).toBe("7 days");
     expect(shareExpiryLabel("30d")).toBe("30 days");
     expect(shareExpiryLabel("never")).toBe("Never expires");
+  });
+});
+
+describe("shareStatusLabel (Day 28, the Shared page)", () => {
+  it("is Live when not revoked and not expired", () => {
+    expect(shareStatusLabel({ expiresAt: null, revokedAt: null })).toBe("Live");
+    expect(
+      shareStatusLabel({
+        expiresAt: "2999-01-01T00:00:00Z",
+        revokedAt: null,
+      })
+    ).toBe("Live");
+  });
+
+  it("is Expired when the expiry passed", () => {
+    expect(
+      shareStatusLabel({
+        expiresAt: "2020-01-01T00:00:00Z",
+        revokedAt: null,
+      })
+    ).toBe("Expired");
+  });
+
+  it("is Revoked when revoked (even if the expiry has not passed)", () => {
+    expect(
+      shareStatusLabel({
+        expiresAt: "2999-01-01T00:00:00Z",
+        revokedAt: "2026-11-20T00:00:00Z",
+      })
+    ).toBe("Revoked");
+  });
+});
+
+describe("formatShareExpiry (Day 28)", () => {
+  it("says Never expires when there is no expiry", () => {
+    expect(formatShareExpiry(null)).toBe("Never expires");
+  });
+
+  it("shows the date otherwise", () => {
+    expect(formatShareExpiry("2026-12-01T00:00:00Z")).toContain("Expires");
   });
 });

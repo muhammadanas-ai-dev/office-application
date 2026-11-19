@@ -51,3 +51,10 @@ next-env.d.ts
 /ocr/tesseract/
 /ocr/leptonica/
 /ocr/vendor/
+
+# Generated at run time by the corpus / fixture generators (Day 26).
+# They are rewritten on every run; do not commit them.
+scripts/build-corpus-pdf.mjs
+scripts/build-img-helper.mjs
+scripts/build-pdf1-helper.mjs
+scripts/build-scanned-helper.mjs

@@ -7,6 +7,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  AUTH_RATE_LIMIT_MESSAGE,
+  checkAuthAttempt,
+  clearAuthAttempts,
+} from "@/lib/auth-rate-limit";
+import { logError } from "@/lib/log";
 import { getPublicEnv } from "@/lib/env";
 import {
   resetRequestSchema,
@@ -54,12 +60,24 @@ export async function signIn(
   });
   if (!parsed.success) return validationError(parsed.error.issues);
 
+  // Rate-limit sign-in attempts per email (Day 27 hardening).
+  // A blocked attempt never reaches Supabase Auth.
+  const attempt = checkAuthAttempt(parsed.data.email, "sign-in");
+  if (!attempt.allowed) {
+    return { ok: false, error: AUTH_RATE_LIMIT_MESSAGE };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data.user) {
-    console.error("signIn failed:", error?.message);
+    logError("auth.signIn", error?.message ?? "Sign-in failed");
     return { ok: false, error: "Email or password is incorrect." };
   }
+
+  // A successful sign-in clears the earlier failures for this
+  // email, so a user who eventually remembers their password
+  // is not locked out by their own mistypes.
+  clearAuthAttempts(parsed.data.email, "sign-in");
 
   // Provisioning is idempotent; if it fails here the next sign-in or
   // the auth callback retries it. The session itself is valid.
@@ -69,7 +87,7 @@ export async function signIn(
       (data.user.user_metadata?.display_name as string | undefined) ?? null
     );
   } catch (provisionError) {
-    console.error("provisioning failed after sign-in:", provisionError);
+    logError("auth.provision", provisionError);
   }
 
   revalidatePath("/home");
@@ -88,6 +106,13 @@ export async function signUp(
   });
   if (!parsed.success) return validationError(parsed.error.issues);
 
+  // Rate-limit sign-up attempts per email (Day 27 hardening).
+  // A blocked attempt never reaches Supabase Auth.
+  const attempt = checkAuthAttempt(parsed.data.email, "sign-up");
+  if (!attempt.allowed) {
+    return { ok: false, error: AUTH_RATE_LIMIT_MESSAGE };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -98,7 +123,7 @@ export async function signUp(
     },
   });
   if (error || !data.user) {
-    console.error("signUp failed:", error?.message);
+    logError("auth.signUp", error?.message ?? "Sign-up failed");
     return { ok: false, error: "Could not create your account. Try again." };
   }
 
@@ -116,7 +141,7 @@ export async function signUp(
     try {
       await ensureProfileAndWorkspace(data.user.id, parsed.data.displayName);
     } catch (provisionError) {
-      console.error("provisioning failed after sign-up:", provisionError);
+      logError("auth.provision", provisionError);
     }
     revalidatePath("/home");
     redirect("/home");
@@ -156,7 +181,7 @@ export async function requestPasswordReset(
   if (error) {
     // Deliberately the same reply either way: do not reveal whether
     // the email belongs to an account.
-    console.error("requestPasswordReset failed:", error.message);
+    logError("auth.resetRequest", error.message);
   }
   return {
     ok: true,
@@ -186,7 +211,7 @@ export async function updatePassword(
     password: parsed.data.password,
   });
   if (error) {
-    console.error("updatePassword failed:", error.message);
+    logError("auth.updatePassword", error.message);
     return { ok: false, error: "Could not update your password. Try again." };
   }
 
@@ -218,7 +243,7 @@ export async function updateProfile(
     .update({ display_name: parsed.data.displayName })
     .eq("id", user.id);
   if (error) {
-    console.error("updateProfile failed:", error.message);
+    logError("auth.updateProfile", error.message);
     return { ok: false, error: "Could not save your profile. Try again." };
   }
 
@@ -262,7 +287,7 @@ export async function updatePreferences(
     })
     .eq("id", user.id);
   if (error) {
-    console.error("updatePreferences failed:", error.message);
+    logError("auth.updatePreferences", error.message);
     // A missing preference column means the Day 24 migration
     // has not been applied yet (PGRST204, or 42703 when the
     // schema cache is stale).

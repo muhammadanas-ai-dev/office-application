@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/components/auth/profile-form";
@@ -83,6 +84,18 @@ export default async function SettingsPage() {
             migrationApplied={migrationApplied}
           />
         </div>
+      </div>
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold">Privacy</h2>
+        <p className="mt-1 text-sm text-[#667389]">
+          What Forma Office stores, where it is stored, and which services
+          process your documents.
+        </p>
+        <p className="mt-2 text-sm">
+          <Link href="/privacy" className="text-[#3159c9] underline">
+            Read the privacy disclosure
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -6,7 +6,8 @@
 // permanent delete gets a browser confirm instead.
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ALLOWED_UPLOAD_EXTENSIONS,
   SUPPORTED_UPLOAD_MESSAGE,
@@ -158,27 +159,142 @@ export function CreateDocumentForm({ folderId }: { folderId: string | null }) {
 export function UploadForm({ folderId }: { folderId: string | null }) {
   const [state, formAction, isPending] = useActionState(uploadDocument, idle);
   return (
-    <form action={formAction} className="flex flex-col gap-1">
-      <div className="flex items-start gap-2">
-        <input type="hidden" name="folderId" value={folderId ?? ""} />
-        <label className="sr-only" htmlFor="upload-file">
-          Choose a file to upload
-        </label>
-        <input
-          id="upload-file"
-          name="file"
-          type="file"
-          required
-          accept={ALLOWED_UPLOAD_EXTENSIONS.map((ext) => `.${ext}`).join(",")}
-          className="h-9 max-w-64 rounded-lg border border-[#dce3ec] bg-white px-2 py-1.5 text-sm file:mr-2 file:rounded-md file:border-0 file:bg-[#edf1f6] file:px-2 file:py-1 file:text-xs file:font-medium"
-        />
-        <button type="submit" disabled={isPending} className={buttonClass}>
-          {isPending ? "Uploading…" : "Upload"}
-        </button>
-      </div>
-      <p className="text-xs text-[#667389]">{SUPPORTED_UPLOAD_MESSAGE}</p>
-      <FormError state={state} />
-    </form>
+    <DropZone folderId={folderId}>
+      <form action={formAction} className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-start gap-2">
+          <input type="hidden" name="folderId" value={folderId ?? ""} />
+          <label className="sr-only" htmlFor="upload-file">
+            Choose a file to upload
+          </label>
+          <input
+            id="upload-file"
+            name="file"
+            type="file"
+            required
+            accept={ALLOWED_UPLOAD_EXTENSIONS.map((ext) => `.${ext}`).join(",")}
+            className="h-9 max-w-64 rounded-lg border border-[#dce3ec] bg-white px-2 py-1.5 text-sm file:mr-2 file:rounded-md file:border-0 file:bg-[#edf1f6] file:px-2 file:py-1 file:text-xs file:font-medium"
+          />
+          <button type="submit" disabled={isPending} className={buttonClass}>
+            {isPending ? "Uploading…" : "Upload"}
+          </button>
+        </div>
+        <p className="text-xs text-[#667389]">{SUPPORTED_UPLOAD_MESSAGE}</p>
+        <FormError state={state} />
+      </form>
+    </DropZone>
+  );
+}
+
+/** One dropped file's upload status (for the drop zone). */
+type DroppedFileStatus = {
+  name: string;
+  status: "uploading" | "done" | "error";
+  error?: string;
+};
+
+/**
+ * Drag-and-drop upload (Day 28) — wraps the UploadForm.
+ *
+ * Dropping files uploads each one through the same
+ * `uploadDocument` server action the file input uses, so
+ * the byte-signature check, the size limit and the role
+ * check all apply unchanged. Multiple files are uploaded
+ * one by one (the action takes one file) and each shows
+ * its own status. The file input stays — drag-and-drop is
+ * an addition, not a replacement.
+ */
+function DropZone({
+  folderId,
+  children,
+}: {
+  folderId: string | null;
+  children: React.ReactNode;
+}) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploads, setUploads] = useState<DroppedFileStatus[]>([]);
+  const router = useRouter();
+
+  function onDragOver(event: React.DragEvent) {
+    event.preventDefault();
+    setIsDragging(true);
+  }
+
+  function onDragLeave(event: React.DragEvent) {
+    // Only clear the highlight when the pointer really leaves
+    // the zone (not when it moves between children).
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setIsDragging(false);
+    }
+  }
+
+  async function onDrop(event: React.DragEvent) {
+    event.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length === 0) return;
+    setUploads(files.map((file) => ({ name: file.name, status: "uploading" })));
+    let anyDone = false;
+    for (const file of files) {
+      const formData = new FormData();
+      formData.set("folderId", folderId ?? "");
+      formData.set("file", file);
+      const result = await uploadDocument(idle, formData);
+      anyDone = anyDone || result.ok;
+      setUploads((prev) =>
+        prev.map((u) =>
+          u.name === file.name
+            ? result.ok
+              ? { name: file.name, status: "done" }
+              : { name: file.name, status: "error", error: result.error }
+            : u
+        )
+      );
+    }
+    // The library list is server-rendered — refresh it so the
+    // new documents appear.
+    if (anyDone) router.refresh();
+  }
+
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={
+        isDragging
+          ? "rounded-xl border-2 border-dashed border-[#3159c9] bg-[#edf1fd] p-3"
+          : "rounded-xl border-2 border-dashed border-transparent p-1"
+      }
+    >
+      {children}
+      {isDragging ? (
+        <p className="mt-2 text-sm font-medium text-[#3159c9]">
+          Drop files here to upload
+        </p>
+      ) : (
+        <p className="mt-1 text-xs text-[#667389]">
+          Or drag files here to upload them.
+        </p>
+      )}
+      {uploads.length > 0 ? (
+        <ul className="mt-2 flex flex-col gap-1" aria-live="polite">
+          {uploads.map((upload) => (
+            <li key={upload.name} className="text-sm">
+              <span className="font-medium">{upload.name}</span>{" "}
+              {upload.status === "uploading" ? (
+                <span className="text-[#667389]">Uploading…</span>
+              ) : upload.status === "done" ? (
+                <span className="text-[#1a7f37]">Uploaded</span>
+              ) : (
+                <span className="text-[#b3261e]">
+                  {upload.error ?? "Could not upload."}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
