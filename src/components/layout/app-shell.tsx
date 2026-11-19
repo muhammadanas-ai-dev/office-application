@@ -23,43 +23,67 @@ import { DocumentTabs } from "@/components/layout/document-tabs";
 import { UserMenu } from "@/components/layout/user-menu";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/recent", label: "Recent", icon: Clock },
-  { href: "/files", label: "My files", icon: FolderOpen },
-  { href: "/shared", label: "Shared", icon: Users },
-  { href: "/starred", label: "Starred", icon: Star },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
-  { href: "/images-to-pdf", label: "Images to PDF", icon: FileImage },
-  { href: "/trash", label: "Trash", icon: Trash2 },
-  { href: "/settings", label: "Settings", icon: Settings },
+const NAV_SECTIONS = [
+  {
+    label: "Workspace",
+    items: [
+      { href: "/home", label: "Home", icon: Home },
+      { href: "/recent", label: "Recent", icon: Clock },
+      { href: "/files", label: "My files", icon: FolderOpen },
+      { href: "/shared", label: "Shared", icon: Users },
+      { href: "/starred", label: "Starred", icon: Star },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { href: "/templates", label: "Templates", icon: LayoutTemplate },
+      { href: "/images-to-pdf", label: "Images to PDF", icon: FileImage },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/trash", label: "Trash", icon: Trash2 },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ] as const;
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Workspace" className="flex flex-col gap-1 px-3 py-4">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href;
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3159c9]",
-              active
-                ? "bg-[#edf1f6] font-semibold text-[#17253b]"
-                : "text-[#667389] hover:bg-[#f4f6fa] hover:text-[#202b3c]"
-            )}
-          >
-            <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-            {label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Workspace" className="flex flex-col gap-4 px-3 py-4">
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.label}>
+          <p className="mb-1 px-3 text-[11px] font-semibold tracking-wide text-[#98a2b3] uppercase">
+            {section.label}
+          </p>
+          <div className="flex flex-col gap-1">
+            {section.items.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3159c9]",
+                    active
+                      ? "bg-[#edf1f6] font-semibold text-[#17253b]"
+                      : "text-[#667389] hover:bg-[#f4f6fa] hover:text-[#202b3c]"
+                  )}
+                >
+                  <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -76,15 +100,22 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <FormaLogo />
         </Link>
       </div>
+      <div className="px-3 pb-2">
+        <Link
+          href="/home"
+          onClick={onNavigate}
+          className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#3159c9] text-sm font-medium text-white hover:bg-[#2a4cab] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3159c9]"
+        >
+          <Plus size={16} aria-hidden="true" />
+          New
+        </Link>
+      </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <SidebarNav onNavigate={onNavigate} />
       </div>
       <div className="border-t border-[#dce3ec] px-4 py-3">
-        <p className="text-xs text-[#667389]">
-          Forma Office · day-04 shell
-          <br />
-          Library is live; the editor lands Day 5.
-        </p>
+        <p className="text-xs text-[#667389]">Forma Office</p>
+        <p className="text-xs text-[#98a2b3]">Documents, made precise.</p>
       </div>
     </div>
   );

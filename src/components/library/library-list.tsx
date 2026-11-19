@@ -2,8 +2,12 @@
 // toolbar and document list. Interactive bits live in
 // library-forms.tsx; this file only renders data.
 import Link from "next/link";
-import { Folder, FileText, ChevronRight } from "lucide-react";
+import { Folder, ChevronRight } from "lucide-react";
 import { formatBytes } from "@/lib/storage";
+import {
+  FileTypeIcon,
+  fileTypeLabel,
+} from "@/components/library/file-type-icon";
 import { getEditorDocumentType, getEditorFileType } from "@/lib/editor";
 import { isExportableToPdf } from "@/lib/export";
 import { isPdfMimeType } from "@/lib/pdf-tools";
@@ -309,18 +313,14 @@ export async function DocumentTable({
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="flex min-w-0 items-start gap-2">
-                <FileText
-                  size={18}
-                  aria-hidden="true"
-                  className="mt-0.5 shrink-0 text-[#667389]"
-                />
+                <FileTypeIcon mimeType={document.mime_type} />
                 <div className="min-w-0">
                   <p className="truncate font-medium text-[#202b3c]">
                     {document.title}
                   </p>
                   <p className="text-xs text-[#667389]">
                     {document.file_path
-                      ? `${formatBytes(document.size_bytes)} · v${document.version} · `
+                      ? `${fileTypeLabel(document.mime_type)} · ${formatBytes(document.size_bytes)} · v${document.version} · `
                       : "Blank document — no file yet · "}
                     Modified {formatDate(document.updated_at)}
                   </p>
