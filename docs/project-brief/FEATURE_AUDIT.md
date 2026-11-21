@@ -127,7 +127,7 @@ full-screen reading.
 |---|---|
 | Blank document templates | ✅ Done (Day 15 — a new blank DOCX/XLSX/PPTX is a real file that opens in the editor) |
 | Resume / CV, cover letter, business report, academic, research, letter/memo, proposal/contract, invoice, minutes, certificate/form templates | ✅ Done (Day 16 first three, Day 30 remaining six — proposal, invoice, minutes, certificate; spreadsheet budget/tracker and presentation pitch-deck) |
-| User-created reusable templates stored locally | ❌ Not started |
+| User-created reusable templates stored locally | ✅ Done (Day 31 — save/apply/rename/delete; the live e2e is pending the owner applying the Day 31 migration) |
 
 ## 3. Spreadsheet (§4)
 
@@ -305,9 +305,13 @@ and a "Use this template" form that creates a new document in
 the library. The templates are Forma's own original files (no
 WPS templates). The apply action stores the new document with
 the template's own type (DOCX, XLSX or PPTX) and MIME type.
-Not started yet: save-a-custom-template; template categories,
-tags and search; preview-before-applying is the thumbnail +
-preview text (not a full-page render).
+Day 31 added a "My templates" section: a document can be saved
+as a custom template from its Manage menu (a name + an optional
+description); the template is a snapshot of the document's file
+at save time, and it can be applied, renamed or deleted from the
+gallery. Not started yet: template categories, tags and search;
+preview-before-applying is the thumbnail + preview text (not a
+full-page render).
 
 ## 9. Review, sharing and collaboration (§10)
 

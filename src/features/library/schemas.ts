@@ -67,6 +67,54 @@ export const moveDocumentSchema = z.object({
   targetFolderId: optionalUuid,
 });
 
+// User-created templates (Day 31). The name is required (at most
+// 200 characters, the same limit as a document title); the
+// description is optional (at most 500 characters, the same limit
+// as the table check).
+export const saveAsTemplateSchema = z.object({
+  documentId: uuid,
+  name: z
+    .string()
+    .trim()
+    .min(1, "Give the template a name.")
+    .max(200, "Template names are at most 200 characters."),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Descriptions are at most 500 characters.")
+    .optional()
+    .transform((v) => (v ? v : null)),
+});
+
+export const applyUserTemplateSchema = z.object({
+  templateId: uuid,
+  title: z
+    .string()
+    .trim()
+    .min(1, "Give the document a title.")
+    .max(200, "Titles are at most 200 characters."),
+  folderId: optionalUuid,
+});
+
+export const userTemplateIdSchema = z.object({
+  templateId: uuid,
+});
+
+export const renameUserTemplateSchema = z.object({
+  templateId: uuid,
+  name: z
+    .string()
+    .trim()
+    .min(1, "Give the template a name.")
+    .max(200, "Template names are at most 200 characters."),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Descriptions are at most 500 characters.")
+    .optional()
+    .transform((v) => (v ? v : null)),
+});
+
 export const applyTemplateSchema = z.object({
   // The template id (Day 16, extended Day 30). An unknown id is
   // rejected, not silently defaulted — the registry is the source

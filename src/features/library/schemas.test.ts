@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   applyTemplateSchema,
+  applyUserTemplateSchema,
   documentTitleSchema,
   folderNameSchema,
   moveFolderSchema,
   renameFolderSchema,
+  renameUserTemplateSchema,
+  saveAsTemplateSchema,
+  userTemplateIdSchema,
 } from "@/features/library/schemas";
 import { TEMPLATES } from "@/lib/templates";
 
@@ -135,6 +139,91 @@ describe("moveFolderSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.targetParentId).toBeNull();
+    }
+  });
+});
+
+describe("saveAsTemplateSchema", () => {
+  it("accepts a document id, a name and an optional description", () => {
+    const result = saveAsTemplateSchema.safeParse({
+      documentId: "11111111-1111-4111-8111-111111111111",
+      name: "  My contract  ",
+      description: "  The standard client contract.  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.name).toBe("My contract");
+      expect(result.data.description).toBe("The standard client contract.");
+    }
+  });
+
+  it("treats an empty description as no description", () => {
+    const result = saveAsTemplateSchema.safeParse({
+      documentId: "11111111-1111-4111-8111-111111111111",
+      name: "My contract",
+      description: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.description).toBeNull();
+    }
+  });
+
+  it("rejects an empty name and a non-uuid document id", () => {
+    expect(
+      saveAsTemplateSchema.safeParse({
+        documentId: "11111111-1111-4111-8111-111111111111",
+        name: "   ",
+      }).success
+    ).toBe(false);
+    expect(
+      saveAsTemplateSchema.safeParse({
+        documentId: "not-a-uuid",
+        name: "My contract",
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("applyUserTemplateSchema", () => {
+  it("accepts a template id, a title and an optional folder", () => {
+    const result = applyUserTemplateSchema.safeParse({
+      templateId: "11111111-1111-4111-8111-111111111111",
+      title: "  New contract  ",
+      folderId: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.title).toBe("New contract");
+      expect(result.data.folderId).toBeNull();
+    }
+  });
+});
+
+describe("userTemplateIdSchema", () => {
+  it("accepts a uuid template id and rejects anything else", () => {
+    expect(
+      userTemplateIdSchema.safeParse({
+        templateId: "11111111-1111-4111-8111-111111111111",
+      }).success
+    ).toBe(true);
+    expect(
+      userTemplateIdSchema.safeParse({ templateId: "not-a-uuid" }).success
+    ).toBe(false);
+  });
+});
+
+describe("renameUserTemplateSchema", () => {
+  it("accepts a template id, a name and an optional description", () => {
+    const result = renameUserTemplateSchema.safeParse({
+      templateId: "11111111-1111-4111-8111-111111111111",
+      name: "  Renamed  ",
+      description: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.name).toBe("Renamed");
+      expect(result.data.description).toBeNull();
     }
   });
 });

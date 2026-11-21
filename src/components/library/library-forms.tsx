@@ -15,10 +15,12 @@ import {
 import { BLANK_TEMPLATE_TYPES } from "@/lib/blank-templates";
 import {
   applyTemplate,
+  applyUserTemplate,
   createDocument,
   createFolder,
   deleteDocument,
   deleteFolder,
+  deleteUserTemplate,
   duplicateDocument,
   moveDocument,
   moveFolder,
@@ -26,8 +28,10 @@ import {
   permanentDeleteFolder,
   renameDocument,
   renameFolder,
+  renameUserTemplate,
   restoreDocument,
   restoreFolder,
+  saveAsTemplate,
   toggleStar,
   uploadDocument,
   type ActionResult,
@@ -84,6 +88,119 @@ export function ApplyTemplateForm({
           {isPending ? "Creating…" : "Use this template"}
         </button>
       </div>
+      <FormError state={state} />
+    </form>
+  );
+}
+
+// Apply a user-created template (Day 31). The same form as
+// ApplyTemplateForm, but the action copies the template file from
+// Storage instead of reading a built-in template from disk.
+export function ApplyUserTemplateForm({
+  templateId,
+  templateName,
+  folderId,
+}: {
+  templateId: string;
+  templateName: string;
+  folderId: string | null;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    applyUserTemplate,
+    idle
+  );
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <div className="flex items-start gap-2">
+        <input type="hidden" name="folderId" value={folderId ?? ""} />
+        <input type="hidden" name="templateId" value={templateId} />
+        <label className="sr-only" htmlFor={`apply-user-${templateId}-title`}>
+          Title for your {templateName}
+        </label>
+        <input
+          id={`apply-user-${templateId}-title`}
+          name="title"
+          required
+          maxLength={200}
+          placeholder={`My ${templateName.toLowerCase()}`}
+          className={inputClass}
+        />
+        <button type="submit" disabled={isPending} className={buttonClass}>
+          {isPending ? "Creating…" : "Use this template"}
+        </button>
+      </div>
+      <FormError state={state} />
+    </form>
+  );
+}
+
+// Delete a user-created template (Day 31). The row and its Storage
+// file are both removed; the document it was saved from is never
+// touched.
+export function DeleteUserTemplateForm({
+  templateId,
+  templateName,
+}: {
+  templateId: string;
+  templateName: string;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    deleteUserTemplate,
+    idle
+  );
+  return (
+    <form action={formAction} className="flex flex-col gap-1">
+      <input type="hidden" name="templateId" value={templateId} />
+      <button
+        type="submit"
+        disabled={isPending}
+        aria-label={`Delete template ${templateName}`}
+        className={dangerButtonClass}
+      >
+        Delete template
+      </button>
+      <FormError state={state} />
+    </form>
+  );
+}
+
+// Rename a user-created template (Day 31): the name + description.
+// The file itself is never touched.
+export function RenameUserTemplateForm({
+  templateId,
+  templateName,
+  templateDescription,
+}: {
+  templateId: string;
+  templateName: string;
+  templateDescription: string | null;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    renameUserTemplate,
+    idle
+  );
+  return (
+    <form action={formAction} className="flex flex-col gap-1.5">
+      <input type="hidden" name="templateId" value={templateId} />
+      <input
+        name="name"
+        defaultValue={templateName}
+        required
+        maxLength={200}
+        aria-label={`Template name for ${templateName}`}
+        className="h-8 min-w-0 rounded-md border border-[#dce3ec] px-2 text-xs"
+      />
+      <input
+        name="description"
+        defaultValue={templateDescription ?? ""}
+        maxLength={500}
+        aria-label={`Template description for ${templateName}`}
+        placeholder="Description (optional)"
+        className="h-8 min-w-0 rounded-md border border-[#dce3ec] px-2 text-xs"
+      />
+      <button type="submit" disabled={isPending} className={subtleButtonClass}>
+        Rename template
+      </button>
       <FormError state={state} />
     </form>
   );
@@ -455,6 +572,8 @@ export function DocumentActions({
     duplicateDocument,
     idle
   );
+  const [saveTemplateState, saveTemplateAction, saveTemplatePending] =
+    useActionState(saveAsTemplate, idle);
   const [starState, starAction, starPending] = useActionState(toggleStar, idle);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -638,6 +757,40 @@ export function DocumentActions({
             </button>
           </form>
           <FormError state={duplicateState} />
+          {hasFile ? (
+            <>
+              <form
+                action={saveTemplateAction}
+                className="flex flex-col gap-1.5"
+              >
+                <input type="hidden" name="documentId" value={document.id} />
+                <input
+                  name="name"
+                  defaultValue={document.title}
+                  required
+                  maxLength={200}
+                  aria-label={`Template name for ${document.title}`}
+                  placeholder="Template name"
+                  className="h-8 min-w-0 flex-1 rounded-md border border-[#dce3ec] px-2 text-xs"
+                />
+                <input
+                  name="description"
+                  maxLength={500}
+                  aria-label={`Template description for ${document.title}`}
+                  placeholder="Description (optional)"
+                  className="h-8 min-w-0 flex-1 rounded-md border border-[#dce3ec] px-2 text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={saveTemplatePending}
+                  className={subtleButtonClass}
+                >
+                  Save as template
+                </button>
+              </form>
+              <FormError state={saveTemplateState} />
+            </>
+          ) : null}
           <form action={deleteAction}>
             <input type="hidden" name="documentId" value={document.id} />
             <button

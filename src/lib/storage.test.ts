@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildStoragePath,
+  buildTemplateStoragePath,
   formatBytes,
   getExtension,
   sanitizeFileName,
@@ -98,6 +99,20 @@ describe("buildStoragePath", () => {
   it("starts with the workspace id, then document id and version", () => {
     expect(buildStoragePath("ws-1", "doc-1", 2, "My Report.docx")).toBe(
       "ws-1/doc-1/v2/My_Report.docx"
+    );
+  });
+});
+
+describe("buildTemplateStoragePath", () => {
+  it("starts with the workspace id, then templates and the template id", () => {
+    expect(buildTemplateStoragePath("ws-1", "tpl-1", "My Report.docx")).toBe(
+      "ws-1/templates/tpl-1/My_Report.docx"
+    );
+  });
+
+  it("sanitises the file name (no path traversal out of the templates folder)", () => {
+    expect(buildTemplateStoragePath("ws-1", "tpl-1", "../../etc/passwd")).toBe(
+      "ws-1/templates/tpl-1/passwd"
     );
   });
 });

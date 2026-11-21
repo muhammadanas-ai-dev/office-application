@@ -65,6 +65,19 @@ export function buildStoragePath(
   return `${workspaceId}/${documentId}/v${version}/${sanitizeFileName(fileName)}`;
 }
 
+/** Object path for a user-created template (Day 31).
+ *
+ * The template file lives in the `documents` bucket under the
+ * workspace id, so the existing Storage policies apply unchanged
+ * (they read the workspace from the first path segment). */
+export function buildTemplateStoragePath(
+  workspaceId: string,
+  templateId: string,
+  fileName: string
+): string {
+  return `${workspaceId}/templates/${templateId}/${sanitizeFileName(fileName)}`;
+}
+
 export type UploadValidation =
   | { ok: true; extension: string; mimeType: string }
   | { ok: false; error: string };

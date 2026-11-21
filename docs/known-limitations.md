@@ -186,20 +186,24 @@ Updated: 2026-11-18 (Day 12)
   validation, RLS and page paths ARE proven live (13/13). The
   full conversion proof runs the day the docserver is back —
   flip `DOCSERVER_LIVE` in scripts/e2e-convert-test.mjs.
-- **Templates limits (Day 16, extended Day 30).** The gallery now
-  has nine templates (resume, letter, report, proposal, invoice,
+- **Templates limits (Day 16, extended Day 30 + Day 31).** The gallery now
+  has nine built-in templates (resume, letter, report, proposal, invoice,
   minutes, certificate, budget tracker, pitch deck) across DOCX,
-  XLSX and PPTX. The budget tracker's preview shows the formulas
+  XLSX and PPTX, plus a "My templates" section for the user's own
+  custom templates. A custom template has no thumbnail and no
+  content preview (LibreOffice is not available in the app runtime,
+  so no first-page render can be made at save time) — it shows the
+  file-type icon instead. A custom template is a snapshot of the
+  document's file at save time; later edits to the source document
+  do not update it, and deleting the source document does not delete
+  the template. The budget tracker's preview shows the formulas
   (e.g. `=SUM(B6:B7)`), not the computed results — the numbers are
   computed when the spreadsheet is opened in the editor. The pitch
   deck is 7 slides of title + body text only — no charts, images
-  or animations (python-pptx cannot do those reliably). There is
-  no "save a custom template" yet — turning one of your documents
-  into a template needs a per-user template store (a table +
-  Storage), which is a separate feature. The thumbnails are
-  first-page renders made at authoring time (LibreOffice +
-  pdftoppm); a template with more than one page only shows its
-  first page in the gallery.
+  or animations (python-pptx cannot do those reliably). The
+  thumbnails are first-page renders made at authoring time
+  (LibreOffice + pdftoppm); a template with more than one page
+  only shows its first page in the gallery.
 - **Security limits (Day 20).** No 40-bit encryption (insecure —
   not offered). No password recovery — if the password is
   forgotten, the PDF cannot be opened (that is the point of

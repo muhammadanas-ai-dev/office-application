@@ -13,6 +13,7 @@ import { logError } from "@/lib/log";
 import {
   ALLOWED_UPLOAD_TYPES,
   buildStoragePath,
+  buildTemplateStoragePath,
   DOCUMENTS_BUCKET,
   validateUpload,
 } from "@/lib/storage";
@@ -31,8 +32,10 @@ import {
 import { getBlankTemplateBytes } from "@/lib/blank-templates.server";
 import { getTemplateBytes } from "@/lib/templates.server";
 import { getTemplate } from "@/lib/templates";
+import { getUserTemplateInWorkspace } from "@/lib/user-templates.server";
 import {
   applyTemplateSchema,
+  applyUserTemplateSchema,
   documentIdSchema,
   documentTitleSchema,
   folderIdSchema,
@@ -41,8 +44,11 @@ import {
   moveFolderSchema,
   renameDocumentSchema,
   renameFolderSchema,
+  renameUserTemplateSchema,
+  saveAsTemplateSchema,
   toggleStarSchema,
   uploadDocumentSchema,
+  userTemplateIdSchema,
 } from "@/features/library/schemas";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -87,7 +93,14 @@ async function authedWorkspace() {
 }
 
 function revalidateLibrary() {
-  for (const path of ["/files", "/home", "/recent", "/starred", "/trash"]) {
+  for (const path of [
+    "/files",
+    "/home",
+    "/recent",
+    "/starred",
+    "/trash",
+    "/templates",
+  ]) {
     revalidatePath(path);
   }
 }
@@ -571,6 +584,257 @@ export async function applyTemplate(
         created_by: user.id,
       });
     if (versionError) throw versionError;
+    revalidateLibrary();
+    return { ok: true };
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// ------------------------------------------------------------------
+// User-created templates (Day 31)
+// ------------------------------------------------------------------
+
+// Save one of the user's own documents as a reusable template.
+// The document's current file is COPIED to the template path in
+// Storage (a snapshot — editing the document later never changes
+// the template), and a row in `user_templates` records the name,
+// description, file path, MIME type and size. If the row insert
+// fails, the copied file is removed again, so a failed save leaves
+// nothing behind.
+export async function saveAsTemplate(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const parsed = saveAsTemplateSchema.safeParse(formValues(formData));
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? GENERIC_ERROR,
+      };
+    }
+    const { supabase, user, workspace } = await authedWorkspace();
+    const doc = await getDocumentInWorkspace(
+      supabase,
+      workspace.id,
+      parsed.data.documentId
+    );
+    if (!doc) return { ok: false, error: "That document does not exist." };
+    if (!doc.file_path) {
+      return {
+        ok: false,
+        error:
+          "That document has no file yet, so it cannot be saved as a template.",
+      };
+    }
+    if (!doc.mime_type || !doc.size_bytes) {
+      return {
+        ok: false,
+        error:
+          "That document has no file yet, so it cannot be saved as a template.",
+      };
+    }
+    if (!(await requireEditorRole(supabase, workspace.id, user.id))) {
+      return {
+        ok: false,
+        error: "Your role does not allow saving templates.",
+      };
+    }
+    const templateId = crypto.randomUUID();
+    const fileName = doc.file_path.split("/").pop() ?? "file";
+    const templatePath = buildTemplateStoragePath(
+      workspace.id,
+      templateId,
+      fileName
+    );
+    const { error: copyError } = await supabase.storage
+      .from(DOCUMENTS_BUCKET)
+      .copy(doc.file_path, templatePath);
+    if (copyError) throw copyError;
+    const { error: insertError } = await supabase
+      .from("user_templates")
+      .insert({
+        id: templateId,
+        workspace_id: workspace.id,
+        source_document_id: doc.id,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        file_path: templatePath,
+        mime_type: doc.mime_type,
+        size_bytes: doc.size_bytes,
+        created_by: user.id,
+      });
+    if (insertError) {
+      await supabase.storage.from(DOCUMENTS_BUCKET).remove([templatePath]);
+      throw insertError;
+    }
+    revalidateLibrary();
+    return { ok: true };
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// Create a new document in the library from a user-created
+// template. The template file is copied inside Storage to the new
+// document's version-1 path (no download/upload round-trip), and
+// the document + version-1 row are inserted; a failed insert
+// removes the copied file again. The template itself is never
+// changed.
+export async function applyUserTemplate(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const parsed = applyUserTemplateSchema.safeParse(formValues(formData));
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? GENERIC_ERROR,
+      };
+    }
+    const { supabase, user, workspace } = await authedWorkspace();
+    const template = await getUserTemplateInWorkspace(
+      supabase,
+      workspace.id,
+      parsed.data.templateId
+    );
+    if (!template) return { ok: false, error: "That template does not exist." };
+    if (!(await requireEditorRole(supabase, workspace.id, user.id))) {
+      return {
+        ok: false,
+        error: "Your role does not allow creating documents.",
+      };
+    }
+    if (parsed.data.folderId) {
+      const { data: folder, error } = await supabase
+        .from("folders")
+        .select("id")
+        .eq("id", parsed.data.folderId)
+        .eq("workspace_id", workspace.id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) throw error;
+      if (!folder) return { ok: false, error: "That folder does not exist." };
+    }
+    const documentId = crypto.randomUUID();
+    const fileName = template.file_path.split("/").pop() ?? "file";
+    const filePath = buildStoragePath(workspace.id, documentId, 1, fileName);
+    const { error: copyError } = await supabase.storage
+      .from(DOCUMENTS_BUCKET)
+      .copy(template.file_path, filePath);
+    if (copyError) throw copyError;
+    const { error: docError } = await supabase.from("documents").insert({
+      id: documentId,
+      workspace_id: workspace.id,
+      folder_id: parsed.data.folderId,
+      title: parsed.data.title,
+      file_path: filePath,
+      mime_type: template.mime_type,
+      size_bytes: template.size_bytes,
+      version: 1,
+      created_by: user.id,
+    });
+    if (docError) {
+      await supabase.storage.from(DOCUMENTS_BUCKET).remove([filePath]);
+      throw docError;
+    }
+    const { error: versionError } = await supabase
+      .from("document_versions")
+      .insert({
+        document_id: documentId,
+        workspace_id: workspace.id,
+        version_number: 1,
+        file_path: filePath,
+        mime_type: template.mime_type,
+        size_bytes: template.size_bytes,
+        created_by: user.id,
+      });
+    if (versionError) throw versionError;
+    revalidateLibrary();
+    return { ok: true };
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// Delete a user-created template: the row and its Storage file are
+// both removed. Deleting the template never touches the document
+// it was saved from.
+export async function deleteUserTemplate(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const parsed = userTemplateIdSchema.safeParse(formValues(formData));
+    if (!parsed.success) return { ok: false, error: GENERIC_ERROR };
+    const { supabase, user, workspace } = await authedWorkspace();
+    const template = await getUserTemplateInWorkspace(
+      supabase,
+      workspace.id,
+      parsed.data.templateId
+    );
+    if (!template) return { ok: false, error: "That template does not exist." };
+    if (!(await requireEditorRole(supabase, workspace.id, user.id))) {
+      return {
+        ok: false,
+        error: "Your role does not allow deleting templates.",
+      };
+    }
+    const { error: deleteError } = await supabase
+      .from("user_templates")
+      .delete()
+      .eq("id", template.id)
+      .eq("workspace_id", workspace.id);
+    if (deleteError) throw deleteError;
+    const { error: removeError } = await supabase.storage
+      .from(DOCUMENTS_BUCKET)
+      .remove([template.file_path]);
+    if (removeError) throw removeError;
+    revalidateLibrary();
+    return { ok: true };
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// Rename a user-created template (name + description). The file
+// itself is never touched.
+export async function renameUserTemplate(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const parsed = renameUserTemplateSchema.safeParse(formValues(formData));
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? GENERIC_ERROR,
+      };
+    }
+    const { supabase, user, workspace } = await authedWorkspace();
+    const template = await getUserTemplateInWorkspace(
+      supabase,
+      workspace.id,
+      parsed.data.templateId
+    );
+    if (!template) return { ok: false, error: "That template does not exist." };
+    if (!(await requireEditorRole(supabase, workspace.id, user.id))) {
+      return {
+        ok: false,
+        error: "Your role does not allow renaming templates.",
+      };
+    }
+    const { error } = await supabase
+      .from("user_templates")
+      .update({
+        name: parsed.data.name,
+        description: parsed.data.description,
+      })
+      .eq("id", template.id)
+      .eq("workspace_id", workspace.id);
+    if (error) throw error;
     revalidateLibrary();
     return { ok: true };
   } catch (error) {
