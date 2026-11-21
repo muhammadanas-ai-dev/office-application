@@ -1,0 +1,82 @@
+[
+  {
+    "style": "Title",
+    "text": "Certificate of Achievement"
+  },
+  {
+    "style": "Normal",
+    "text": "This certificate is proudly presented to"
+  },
+  {
+    "style": "Heading1",
+    "text": "[Recipient Full Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "In recognition of [the achievement \u2014 for example, completing [course or project name] with distinction, or outstanding contribution to [team or organisation]]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Details"
+  },
+  {
+    "style": "Normal",
+    "text": "Field"
+  },
+  {
+    "style": "Normal",
+    "text": "Value"
+  },
+  {
+    "style": "Normal",
+    "text": "Awarded by"
+  },
+  {
+    "style": "Normal",
+    "text": "[Organisation Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "Date"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Certificate ID"
+  },
+  {
+    "style": "Normal",
+    "text": "[ID]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Signatures"
+  },
+  {
+    "style": "Normal",
+    "text": "Issued by: ______________________    [Name], [Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "Date: ______________________"
+  },
+  {
+    "style": "Table",
+    "text": "Field | Value"
+  },
+  {
+    "style": "Table",
+    "text": "Awarded by | [Organisation Name]"
+  },
+  {
+    "style": "Table",
+    "text": "Date | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Certificate ID | [ID]"
+  }
+]

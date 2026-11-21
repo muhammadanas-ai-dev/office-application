@@ -68,9 +68,20 @@ export const moveDocumentSchema = z.object({
 });
 
 export const applyTemplateSchema = z.object({
-  // The template id (Day 16). An unknown id is rejected, not
-  // silently defaulted — the registry is the source of truth.
-  templateId: z.enum(["resume", "letter", "report"]),
+  // The template id (Day 16, extended Day 30). An unknown id is
+  // rejected, not silently defaulted — the registry is the source
+  // of truth, and the schema test fails until this enum matches it.
+  templateId: z.enum([
+    "resume",
+    "letter",
+    "report",
+    "proposal",
+    "invoice",
+    "minutes",
+    "certificate",
+    "budget",
+    "pitch",
+  ]),
   title: z
     .string()
     .trim()

@@ -93,9 +93,14 @@ describe("applyTemplateSchema", () => {
 
   it("rejects an unknown template id", () => {
     expect(
-      applyTemplateSchema.safeParse({ templateId: "invoice", title: "X" })
+      applyTemplateSchema.safeParse({ templateId: "contract", title: "X" })
         .success
     ).toBe(false);
+    // "invoice" is a real template since Day 30, so it must parse.
+    expect(
+      applyTemplateSchema.safeParse({ templateId: "invoice", title: "X" })
+        .success
+    ).toBe(true);
   });
 
   it("stays in step with the template registry", () => {

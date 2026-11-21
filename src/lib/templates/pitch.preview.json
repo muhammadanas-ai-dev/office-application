@@ -1,0 +1,58 @@
+[
+  {
+    "style": "Heading1",
+    "text": "[Product Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[One-line pitch: what it does and who it is for.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "The Problem"
+  },
+  {
+    "style": "Normal",
+    "text": "[The problem your users face, in one or two sentences. Make it concrete \u2014 a real situation, not a vague complaint.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "The Solution"
+  },
+  {
+    "style": "Normal",
+    "text": "[How your product solves it, in one or two sentences. What changes for the user.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "The Market"
+  },
+  {
+    "style": "Normal",
+    "text": "[Who the customers are and how big the opportunity is. One or two numbers, with their source.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "The Product"
+  },
+  {
+    "style": "Normal",
+    "text": "[What the product does today: the three things a user can do with it. Keep it to what exists, not what might exist.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Business Model"
+  },
+  {
+    "style": "Normal",
+    "text": "[How you make money: who pays, how much, and how often. One sentence per revenue stream.]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Team & Ask"
+  },
+  {
+    "style": "Normal",
+    "text": "[Who is building it, and what you are asking for: the amount, what it funds, and what it unlocks.]"
+  }
+]

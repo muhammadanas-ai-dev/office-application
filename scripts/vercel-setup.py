@@ -71,18 +71,30 @@ def main():
     spec.loader.exec_module(gt)
 
     templates = [
-        ("resume", gt.build_resume, "Resume"),
-        ("letter", gt.build_letter, "Letter"),
-        ("report", gt.build_report, "Report"),
+        ("resume", gt.build_resume, gt.extract_preview, "docx", "Resume"),
+        ("letter", gt.build_letter, gt.extract_preview, "docx", "Letter"),
+        ("report", gt.build_report, gt.extract_preview, "docx", "Report"),
+        ("proposal", gt.build_proposal, gt.extract_preview, "docx", "Proposal"),
+        ("invoice", gt.build_invoice, gt.extract_preview, "docx", "Invoice"),
+        ("minutes", gt.build_minutes, gt.extract_preview, "docx", "Minutes"),
+        (
+            "certificate",
+            gt.build_certificate,
+            gt.extract_preview,
+            "docx",
+            "Certificate",
+        ),
+        ("budget", gt.build_budget, gt.extract_preview_xlsx, "xlsx", "Budget"),
+        ("pitch", gt.build_pitch, gt.extract_preview_pptx, "pptx", "Pitch Deck"),
     ]
     docx_dir = os.path.join(ROOT, "src", "lib", "templates")
     png_dir = os.path.join(ROOT, "public", "templates")
     os.makedirs(docx_dir, exist_ok=True)
     os.makedirs(png_dir, exist_ok=True)
-    for slug, builder, title in templates:
-        docx_path = os.path.join(docx_dir, f"{slug}.docx")
-        builder(docx_path)
-        preview = gt.extract_preview(docx_path)
+    for slug, builder, extractor, ext, title in templates:
+        file_path = os.path.join(docx_dir, f"{slug}.{ext}")
+        builder(file_path)
+        preview = extractor(file_path)
         json_path = os.path.join(docx_dir, f"{slug}.preview.json")
         with open(json_path, "w", encoding="utf-8") as f:
             import json
@@ -92,7 +104,7 @@ def main():
         make_thumbnail(
             os.path.join(png_dir, f"{slug}.png"), title, preview
         )
-        print(f"built {slug}.docx + {slug}.preview.json + {slug}.png")
+        print(f"built {slug}.{ext} + {slug}.preview.json + {slug}.png")
 
 
 def make_thumbnail(png_path, title, preview):

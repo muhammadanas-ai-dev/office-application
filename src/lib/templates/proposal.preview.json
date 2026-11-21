@@ -1,0 +1,174 @@
+[
+  {
+    "style": "Title",
+    "text": "[Proposal Title]"
+  },
+  {
+    "style": "Normal",
+    "text": "Prepared for [Client Name]  |  [Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Prepared by [Your Name]  |  [Company Name]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Executive Summary"
+  },
+  {
+    "style": "Normal",
+    "text": "This proposal describes [what you will deliver] for [Client Name], why it is the right approach, and what it costs. The work solves [the client's problem] by [the approach in one sentence]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Scope"
+  },
+  {
+    "style": "Normal",
+    "text": "The work covers [the deliverables in scope]. Out of scope: [what is explicitly not included], so there is no surprise later."
+  },
+  {
+    "style": "Heading1",
+    "text": "Deliverables"
+  },
+  {
+    "style": "ListNumber",
+    "text": "1. [First deliverable]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "2. [Second deliverable]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "3. [Third deliverable]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Timeline"
+  },
+  {
+    "style": "Normal",
+    "text": "Phase"
+  },
+  {
+    "style": "Normal",
+    "text": "Work"
+  },
+  {
+    "style": "Normal",
+    "text": "Due"
+  },
+  {
+    "style": "Normal",
+    "text": "Phase 1"
+  },
+  {
+    "style": "Normal",
+    "text": "[First phase of work]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Phase 2"
+  },
+  {
+    "style": "Normal",
+    "text": "[Second phase of work]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Phase 3"
+  },
+  {
+    "style": "Normal",
+    "text": "[Final phase of work]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Pricing"
+  },
+  {
+    "style": "Normal",
+    "text": "Item"
+  },
+  {
+    "style": "Normal",
+    "text": "Amount"
+  },
+  {
+    "style": "Normal",
+    "text": "[First item]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Second item]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "Total"
+  },
+  {
+    "style": "Normal",
+    "text": "[Total amount]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Terms"
+  },
+  {
+    "style": "Normal",
+    "text": "Payment: [payment terms, e.g. 50% upfront, 50% on delivery]. Validity: this proposal is valid until [date]. Acceptance: sign below to accept."
+  },
+  {
+    "style": "Table",
+    "text": "Phase | Work | Due"
+  },
+  {
+    "style": "Table",
+    "text": "Phase 1 | [First phase of work] | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Phase 2 | [Second phase of work] | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Phase 3 | [Final phase of work] | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Item | Amount"
+  },
+  {
+    "style": "Table",
+    "text": "[First item] | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "[Second item] | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "Total | [Total amount]"
+  }
+]

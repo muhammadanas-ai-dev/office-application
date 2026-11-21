@@ -1,0 +1,202 @@
+[
+  {
+    "style": "Title",
+    "text": "Invoice"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your Business Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Your address]  |  [Your email]  |  [Your phone]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Bill To"
+  },
+  {
+    "style": "Normal",
+    "text": "[Client Name]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Client address]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Invoice Details"
+  },
+  {
+    "style": "Normal",
+    "text": "Field"
+  },
+  {
+    "style": "Normal",
+    "text": "Value"
+  },
+  {
+    "style": "Normal",
+    "text": "Invoice number"
+  },
+  {
+    "style": "Normal",
+    "text": "[INV-0001]"
+  },
+  {
+    "style": "Normal",
+    "text": "Invoice date"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Due date"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "Payment method"
+  },
+  {
+    "style": "Normal",
+    "text": "[Bank transfer / cash / card]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Line Items"
+  },
+  {
+    "style": "Normal",
+    "text": "Description"
+  },
+  {
+    "style": "Normal",
+    "text": "Quantity"
+  },
+  {
+    "style": "Normal",
+    "text": "Rate"
+  },
+  {
+    "style": "Normal",
+    "text": "Amount"
+  },
+  {
+    "style": "Normal",
+    "text": "[First item or service]"
+  },
+  {
+    "style": "Normal",
+    "text": "[1]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Rate]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Second item or service]"
+  },
+  {
+    "style": "Normal",
+    "text": "[1]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Rate]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Totals"
+  },
+  {
+    "style": "Normal",
+    "text": "Subtotal"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "Tax ([Rate]%)"
+  },
+  {
+    "style": "Normal",
+    "text": "[Amount]"
+  },
+  {
+    "style": "Normal",
+    "text": "Total due"
+  },
+  {
+    "style": "Normal",
+    "text": "[Total amount]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Payment Terms"
+  },
+  {
+    "style": "Normal",
+    "text": "Payment is due by [due date]. Please include the invoice number with your payment. Late payments may incur a [late fee]."
+  },
+  {
+    "style": "Table",
+    "text": "Field | Value"
+  },
+  {
+    "style": "Table",
+    "text": "Invoice number | [INV-0001]"
+  },
+  {
+    "style": "Table",
+    "text": "Invoice date | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Due date | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Payment method | [Bank transfer / cash / card]"
+  },
+  {
+    "style": "Table",
+    "text": "Description | Quantity | Rate | Amount"
+  },
+  {
+    "style": "Table",
+    "text": "[First item or service] | [1] | [Rate] | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "[Second item or service] | [1] | [Rate] | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "Subtotal | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "Tax ([Rate]%) | [Amount]"
+  },
+  {
+    "style": "Table",
+    "text": "Total due | [Total amount]"
+  }
+]

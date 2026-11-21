@@ -39,30 +39,55 @@ function listZipEntries(bytes: Buffer): string[] {
 }
 
 describe("template registry", () => {
-  it("lists exactly the three first templates", () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(["resume", "letter", "report"]);
+  it("lists all nine templates", () => {
+    expect(TEMPLATES.map((t) => t.id)).toEqual([
+      "resume",
+      "letter",
+      "report",
+      "proposal",
+      "invoice",
+      "minutes",
+      "certificate",
+      "budget",
+      "pitch",
+    ]);
     expect(TEMPLATES.map((t) => t.name)).toEqual([
       "Professional Resume",
       "Formal Business Letter",
       "Business Report",
+      "Business Proposal",
+      "Invoice",
+      "Meeting Minutes",
+      "Certificate of Achievement",
+      "Monthly Budget Tracker",
+      "Pitch Deck",
     ]);
   });
 
   it("rejects unknown template ids", () => {
     expect(isTemplateId("resume")).toBe(true);
-    expect(isTemplateId("invoice")).toBe(false);
+    expect(isTemplateId("invoice")).toBe(true);
+    expect(isTemplateId("budget")).toBe(true);
+    expect(isTemplateId("contract")).toBe(false);
     expect(isTemplateId("")).toBe(false);
     expect(getTemplate("report").name).toBe("Business Report");
   });
 
+  // The main part of an Office file, by its extension.
+  const MAIN_PART = {
+    docx: "word/document.xml",
+    xlsx: "xl/workbook.xml",
+    pptx: "ppt/presentation.xml",
+  } as const;
+
   it.each(TEMPLATES)(
-    "$id: the file is a valid DOCX with its main part",
+    "$id: the file is a valid Office file with its main part",
     (template) => {
       const bytes = readTemplateBytes(template.fileName);
       expect(bytes.subarray(0, 4).toString("latin1")).toBe("PK\x03\x04");
       const entries = listZipEntries(bytes);
       expect(entries).toContain("[Content_Types].xml");
-      expect(entries).toContain("word/document.xml");
+      expect(entries).toContain(MAIN_PART[template.fileType]);
     }
   );
 
@@ -89,6 +114,12 @@ describe("template registry", () => {
     ["resume", "Title", "[Your Full Name]"],
     ["letter", "Normal", "[Your Full Name]"],
     ["report", "Title", "[Report Title]"],
+    ["proposal", "Title", "[Proposal Title]"],
+    ["invoice", "Title", "Invoice"],
+    ["minutes", "Title", "[Meeting Title] — Minutes"],
+    ["certificate", "Title", "Certificate of Achievement"],
+    ["budget", "Heading1", "Budget"],
+    ["pitch", "Heading1", "[Product Name]"],
   ] as const)(
     "$id: the preview starts with the template's first line",
     (id, style, text) => {
@@ -114,5 +145,46 @@ describe("template registry", () => {
       (e) => e.style === "Table" && e.text.startsWith("Quarter")
     );
     expect(table?.text).toBe("Quarter | Revenue | Growth");
+  });
+
+  it("the budget preview lists its columns and totals", () => {
+    const preview = getTemplate("budget").preview;
+    expect(preview[0]).toEqual({ style: "Heading1", text: "Budget" });
+    expect(
+      preview.some((e) =>
+        e.text.includes("Category | Budget | Actual | Difference")
+      )
+    ).toBe(true);
+    expect(preview.some((e) => e.text.startsWith("Total income"))).toBe(true);
+    expect(preview.some((e) => e.text.startsWith("Total expenses"))).toBe(true);
+    expect(preview.some((e) => e.text.startsWith("Remaining"))).toBe(true);
+  });
+
+  it("the pitch preview lists all seven slide titles", () => {
+    const headings = getTemplate("pitch")
+      .preview.filter((e) => e.style === "Heading1")
+      .map((e) => e.text);
+    expect(headings).toEqual([
+      "[Product Name]",
+      "The Problem",
+      "The Solution",
+      "The Market",
+      "The Product",
+      "Business Model",
+      "Team & Ask",
+    ]);
+  });
+
+  it("the invoice preview contains its line-items table", () => {
+    const header = getTemplate("invoice").preview.find(
+      (e) => e.style === "Table" && e.text.startsWith("Description")
+    );
+    expect(header?.text).toBe("Description | Quantity | Rate | Amount");
+  });
+
+  it("each template has a file type matching its file name", () => {
+    for (const template of TEMPLATES) {
+      expect(template.fileName.endsWith(`.${template.fileType}`)).toBe(true);
+    }
   });
 });

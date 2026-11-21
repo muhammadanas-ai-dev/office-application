@@ -1,0 +1,118 @@
+[
+  {
+    "style": "Title",
+    "text": "[Meeting Title] \u2014 Minutes"
+  },
+  {
+    "style": "Normal",
+    "text": "Date: [Date]  |  Time: [Time]  |  Location: [Location]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Attendees"
+  },
+  {
+    "style": "Normal",
+    "text": "[Name 1], [Name 2], [Name 3]"
+  },
+  {
+    "style": "Heading1",
+    "text": "Agenda"
+  },
+  {
+    "style": "ListNumber",
+    "text": "1. [First agenda item]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "2. [Second agenda item]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "3. [Third agenda item]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Discussion"
+  },
+  {
+    "style": "Heading2",
+    "text": "[First agenda item]"
+  },
+  {
+    "style": "Normal",
+    "text": "What was discussed: [a short summary of the discussion and the points raised]."
+  },
+  {
+    "style": "Heading2",
+    "text": "[Second agenda item]"
+  },
+  {
+    "style": "Normal",
+    "text": "What was discussed: [a short summary of the discussion and the points raised]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Decisions"
+  },
+  {
+    "style": "ListNumber",
+    "text": "1. [First decision]."
+  },
+  {
+    "style": "ListNumber",
+    "text": "2. [Second decision]."
+  },
+  {
+    "style": "Heading1",
+    "text": "Action Items"
+  },
+  {
+    "style": "Normal",
+    "text": "Action"
+  },
+  {
+    "style": "Normal",
+    "text": "Owner"
+  },
+  {
+    "style": "Normal",
+    "text": "Due"
+  },
+  {
+    "style": "Normal",
+    "text": "[First action]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Owner]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Second action]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Owner]"
+  },
+  {
+    "style": "Normal",
+    "text": "[Date]"
+  },
+  {
+    "style": "Table",
+    "text": "Action | Owner | Due"
+  },
+  {
+    "style": "Table",
+    "text": "[First action] | [Owner] | [Date]"
+  },
+  {
+    "style": "Table",
+    "text": "[Second action] | [Owner] | [Date]"
+  }
+]

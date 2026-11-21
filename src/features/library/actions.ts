@@ -30,6 +30,7 @@ import {
 } from "@/lib/blank-templates";
 import { getBlankTemplateBytes } from "@/lib/blank-templates.server";
 import { getTemplateBytes } from "@/lib/templates.server";
+import { getTemplate } from "@/lib/templates";
 import {
   applyTemplateSchema,
   documentIdSchema,
@@ -529,13 +530,16 @@ export async function applyTemplate(
       if (error) throw error;
       if (!folder) return { ok: false, error: "That folder does not exist." };
     }
+    const template = getTemplate(parsed.data.templateId);
     const bytes = getTemplateBytes(parsed.data.templateId);
     const documentId = crypto.randomUUID();
-    const fileName = getTemplateFileName(parsed.data.title, "docx");
+    const fileName = getTemplateFileName(parsed.data.title, template.fileType);
     const filePath = buildStoragePath(workspace.id, documentId, 1, fileName);
-    // Templates are DOCX files in v1, so the MIME type is the DOCX
-    // one from the upload list — no second MIME table.
-    const mimeType = ALLOWED_UPLOAD_TYPES.docx;
+    // The new document has the template's own file type (docx, xlsx
+    // or pptx) — the MIME type comes from the upload list by extension,
+    // so a budget tracker is stored as a spreadsheet and a pitch deck
+    // as a presentation, not as a Word document.
+    const mimeType = ALLOWED_UPLOAD_TYPES[template.fileType];
     const { error: uploadError } = await supabase.storage
       .from(DOCUMENTS_BUCKET)
       .upload(filePath, bytes, { contentType: mimeType });

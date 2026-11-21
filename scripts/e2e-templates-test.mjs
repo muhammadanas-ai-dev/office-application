@@ -94,16 +94,30 @@ async function applyTemplate(session, fields, templateId, title) {
 function hasZipMagic(bytes) {
   return bytes && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
 }
-// The DOCX content is deflate-compressed inside the ZIP, so the
-// plain text is not visible in the raw bytes. Extract
-// word/document.xml with unzip and check the text there.
-async function docxContainsText(bytes, needle) {
+// The Office content is deflate-compressed inside the ZIP, so the
+// plain text is not visible in the raw bytes. Extract the main part
+// (word/document.xml, xl/sharedStrings.xml or ppt/slides/slide1.xml)
+// with unzip and check the text there.
+async function officeContainsText(bytes, ext, needle) {
   const dir = mkdtempSync(join(tmpdir(), "forma-tpl-"));
   try {
-    const file = join(dir, "doc.docx");
+    const file = join(dir, `doc.${ext}`);
     writeFileSync(file, bytes);
-    const { stdout } = await execFileAsync("unzip", ["-p", file, "word/document.xml"]);
-    return stdout.includes(needle);
+    const parts =
+      ext === "docx"
+        ? ["word/document.xml"]
+        : ext === "xlsx"
+          ? ["xl/sharedStrings.xml", "xl/worksheets/sheet1.xml"]
+          : ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml"];
+    for (const part of parts) {
+      try {
+        const { stdout } = await execFileAsync("unzip", ["-p", file, part]);
+        if (stdout.includes(needle)) return true;
+      } catch {
+        // The part does not exist in this file; try the next one.
+      }
+    }
+    return false;
   } catch {
     return false;
   } finally {
@@ -135,36 +149,53 @@ try {
   const gallery = await appFetch("/templates", { session: sessionA });
   const galleryHtml = await gallery.text();
   check("templates page: loads for A (200)", gallery.status === 200, `status ${gallery.status}`);
-  check("templates page: lists Resume, Letter and Report", galleryHtml.includes("Professional Resume") && galleryHtml.includes("Formal Business Letter") && galleryHtml.includes("Business Report"));
-  check("templates page: shows the thumbnails", galleryHtml.includes("/templates/resume.png") && galleryHtml.includes("/templates/letter.png") && galleryHtml.includes("/templates/report.png"));
+  check("templates page: lists all nine templates", ["Professional Resume", "Formal Business Letter", "Business Report", "Business Proposal", "Invoice", "Meeting Minutes", "Certificate of Achievement", "Monthly Budget Tracker", "Pitch Deck"].every((name) => galleryHtml.includes(name)));
+  check("templates page: shows all nine thumbnails", ["resume", "letter", "report", "proposal", "invoice", "minutes", "certificate", "budget", "pitch"].every((slug) => galleryHtml.includes(`/templates/${slug}.png`)));
   check("templates page: shows the resume preview text", galleryHtml.includes("Professional Summary") && galleryHtml.includes("Experience"));
   check("templates page: shows the report preview text", galleryHtml.includes("Executive Summary") && galleryHtml.includes("more lines in the template"));
+  check("templates page: shows the budget preview text", galleryHtml.includes("Budget") && galleryHtml.includes("Total income"));
+  check("templates page: shows the pitch preview text", galleryHtml.includes("The Problem") && galleryHtml.includes("more lines in the template"));
 
-  const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  async function verifyApply(templateId, title, distinctiveText) {
+  const MIME = {
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  };
+  const MAIN_PART = {
+    docx: "word/document.xml",
+    xlsx: "xl/workbook.xml",
+    pptx: "ppt/presentation.xml",
+  };
+  async function verifyApply(templateId, title, ext, distinctiveText) {
     const fields = extractActionFields(galleryHtml, templateId);
     check(`apply ${templateId}: the form's action fields are extractable`, fields !== null);
     if (!fields) return;
     const resp = await applyTemplate(sessionA, fields, templateId, title);
     check(`apply ${templateId}: the form POST succeeds (${resp.status})`, resp.status === 200 || resp.status === 303, `status ${resp.status}`);
     const { data: doc } = await admin.from("documents").select("id, title, file_path, mime_type, size_bytes, version, workspace_id").eq("workspace_id", workspaceAId).eq("title", title).maybeSingle();
-    check(`apply ${templateId}: the document has a file, the DOCX MIME type and version 1`, !!doc && !!doc.file_path && doc.mime_type === DOCX_MIME && doc.version === 1, doc ? `mime ${doc.mime_type}, version ${doc.version}` : "no row");
+    check(`apply ${templateId}: the document has a file, the ${ext.toUpperCase()} MIME type and version 1`, !!doc && !!doc.file_path && doc.mime_type === MIME[ext] && doc.version === 1, doc ? `mime ${doc.mime_type}, version ${doc.version}` : "no row");
     if (doc?.file_path) {
       const { data: blob } = await admin.storage.from("documents").download(doc.file_path);
       const bytes = new Uint8Array(await blob.arrayBuffer());
       const text = Buffer.from(bytes).toString("latin1");
-      const containsText = await docxContainsText(bytes, distinctiveText);
-      check(`apply ${templateId}: the stored file is a valid DOCX containing the template's text`, hasZipMagic(bytes) && text.includes("word/document.xml") && containsText, `${bytes.length} bytes`);
-      check(`apply ${templateId}: the file name carries the .docx extension`, doc.file_path.endsWith(".docx"), doc.file_path);
+      const containsText = await officeContainsText(bytes, ext, distinctiveText);
+      check(`apply ${templateId}: the stored file is a valid ${ext.toUpperCase()} containing the template's text`, hasZipMagic(bytes) && text.includes(MAIN_PART[ext]) && containsText, `${bytes.length} bytes`);
+      check(`apply ${templateId}: the file name carries the .${ext} extension`, doc.file_path.endsWith(`.${ext}`), doc.file_path);
       const { data: ver } = await admin.from("document_versions").select("version_number, file_path").eq("document_id", doc.id).eq("version_number", 1).maybeSingle();
       check(`apply ${templateId}: a version-1 row exists`, !!ver && ver.file_path === doc.file_path);
     }
     return doc;
   }
 
-  const resumeDoc = await verifyApply("resume", "My resume", "Professional Summary");
-  await verifyApply("letter", "My letter", "Subject:");
-  await verifyApply("report", "My report", "Executive Summary");
+  const resumeDoc = await verifyApply("resume", "My resume", "docx", "Professional Summary");
+  await verifyApply("letter", "My letter", "docx", "Subject:");
+  await verifyApply("report", "My report", "docx", "Executive Summary");
+  await verifyApply("proposal", "My proposal", "docx", "Executive Summary");
+  await verifyApply("invoice", "My invoice", "docx", "Line Items");
+  await verifyApply("minutes", "My minutes", "docx", "Action Items");
+  await verifyApply("certificate", "My certificate", "docx", "Certificate of Achievement");
+  await verifyApply("budget", "My budget", "xlsx", "Total income");
+  await verifyApply("pitch", "My pitch", "pptx", "The Problem");
 
   // ---- the applied document opens in the editor ----
   if (resumeDoc?.id) {
@@ -175,7 +206,7 @@ try {
 
   // ---- an unknown template id is refused ----
   const fieldsResume = extractActionFields(galleryHtml, "resume");
-  const badResp = await applyTemplate(sessionA, fieldsResume, "invoice", "Bad template doc");
+  const badResp = await applyTemplate(sessionA, fieldsResume, "contract", "Bad template doc");
   check("apply: an unknown template id is refused (no document created)", badResp.status === 200 || badResp.status === 303, `status ${badResp.status}`);
   const { data: badDoc } = await admin.from("documents").select("id").eq("workspace_id", workspaceAId).eq("title", "Bad template doc").maybeSingle();
   check("apply: the rejected template left no document behind", !badDoc);

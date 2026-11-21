@@ -126,7 +126,7 @@ full-screen reading.
 | Item | Status |
 |---|---|
 | Blank document templates | ✅ Done (Day 15 — a new blank DOCX/XLSX/PPTX is a real file that opens in the editor) |
-| Resume / CV, cover letter, business report, academic, research, letter/memo, proposal/contract, invoice, minutes, certificate/form templates | ❌ Not started (the /templates page is a placeholder) |
+| Resume / CV, cover letter, business report, academic, research, letter/memo, proposal/contract, invoice, minutes, certificate/form templates | ✅ Done (Day 16 first three, Day 30 remaining six — proposal, invoice, minutes, certificate; spreadsheet budget/tracker and presentation pitch-deck) |
 | User-created reusable templates stored locally | ❌ Not started |
 
 ## 3. Spreadsheet (§4)
@@ -294,19 +294,20 @@ LLM provider/key) for when he restarts it.
 | Consistent typography scale / spacing in the app (Inter, brand tokens) | ✅ Done (Day 1) |
 | Accessible contrast and readable toolbar labels | ✅ Done |
 
-## 8. Templates (§9) — ✅ Done (first three, Day 16)
+## 8. Templates (§9) — ✅ Done (all nine, Day 30)
 
 The /templates gallery is real: Professional Resume, Formal
-Business Letter and Business Report, each with a first-page
-thumbnail, a preview of its real content, and a "Use this
-template" form that creates a new document in the library.
-The templates are Forma's own original DOCX files (no WPS
-templates). Not started yet: proposal / contract, invoice /
-purchase order, meeting minutes, certificate / form templates;
-spreadsheet budget/tracker and presentation pitch-deck templates;
-preview-before-applying is the thumbnail + preview text (not a
-full-page render); save-a-custom-template; template categories,
-tags and search.
+Business Letter, Business Report, Business Proposal, Invoice,
+Meeting Minutes, Certificate of Achievement, Monthly Budget
+Tracker (XLSX, with formulas) and Pitch Deck (PPTX, 7 slides),
+each with a first-page thumbnail, a preview of its real content,
+and a "Use this template" form that creates a new document in
+the library. The templates are Forma's own original files (no
+WPS templates). The apply action stores the new document with
+the template's own type (DOCX, XLSX or PPTX) and MIME type.
+Not started yet: save-a-custom-template; template categories,
+tags and search; preview-before-applying is the thumbnail +
+preview text (not a full-page render).
 
 ## 9. Review, sharing and collaboration (§10)
 
