@@ -234,8 +234,8 @@ rehearsal, export slides to images, print handouts/notes.
 | Sticky notes and comments | ✅ Done (Day 17 — sticky notes; comments as a thread are not started) |
 | Freehand drawing | ✅ Done (Day 17 — ink annotations) |
 | Shapes and callout annotations | 🟡 Partial | Day 19: rectangle, ellipse, line on the draw page (live e2e 29/29); callout annotations — not started |
-| Stamps / custom stamps | ❌ Not started |
-| Text watermark / image watermark (opacity, position, rotation) | ❌ Not started |
+| Stamps / custom stamps | ✅ Done | Day 32; live e2e 18/18 |
+| Text watermark / image watermark (opacity, position, rotation) | ✅ Done | Day 32; live e2e 18/18 |
 | Annotation list and navigation | ✅ Done (Day 17 — the annotation list on the annotate page, with remove) |
 
 ### 6.5 Forms, security and signatures

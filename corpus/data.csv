@@ -1,0 +1,5 @@
+id,name,price,note
+1,Widget,9.99,a simple widget
+2,"Gadget, ""deluxe""",24.50,"quoted, with a comma"
+3,Café blend,12.00,unicode: café
+4,Thing,,an empty price

@@ -367,6 +367,12 @@ export async function DocumentTable({
                     ? `/documents/${document.id}/pdf-draw`
                     : null
                 }
+                pdfStampHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/documents/${document.id}/pdf-stamp`
+                    : null
+                }
                 pdfSecurityHref={
                   document.file_path !== null &&
                   isPdfMimeType(document.mime_type)

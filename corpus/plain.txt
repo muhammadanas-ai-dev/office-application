@@ -1,0 +1,6 @@
+Forma Office — Compatibility Corpus
+====================================
+
+This is a plain-text document.
+It has several lines, some unicode: café, naïve, résumé.
+And a line with a tab	separated	value.

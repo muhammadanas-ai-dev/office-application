@@ -204,6 +204,15 @@ Updated: 2026-11-18 (Day 12)
   thumbnails are first-page renders made at authoring time
   (LibreOffice + pdftoppm); a template with more than one page
   only shows its first page in the gallery.
+- **Stamps / watermarks limits (Day 32).** A watermark or a stamp
+  is drawn INTO the page content, so it cannot be removed except
+  by restoring an earlier version (the page says so). The image
+  watermark is PNG/JPEG only (no SVG, no transparency beyond the
+  opacity setting). The stamp box is a rectangle — pdf-lib has no
+  rounded-rectangle draw. The watermark text is Helvetica only
+  (the standard PDF font, so it renders everywhere). A watermark
+  on a scanned-image PDF draws over the image; it does not sit
+  behind it.
 - **Security limits (Day 20).** No 40-bit encryption (insecure —
   not offered). No password recovery — if the password is
   forgotten, the PDF cannot be opened (that is the point of

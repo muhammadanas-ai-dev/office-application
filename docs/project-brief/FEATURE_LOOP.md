@@ -62,7 +62,8 @@ the owner's instruction of 2026-11-18; Supabase Storage stays
 | 12 | Hardening (byte-signature validation, auth rate limiting, monitoring, backup/restore, privacy disclosures, licence audit) | **Done (Day 27 — unit 369/369; live e2e 11/11)** |
 | 13 | UX gaps (dead sidebar controls, drag-and-drop upload, responsive layout, document tabs) | **Done (Day 28 — unit 382/384; live e2e 9/9)** |
 | 14 | Remaining templates (proposal, invoice, minutes, certificate, budget tracker, pitch deck) | **Done (Day 30 — unit 414/414; live e2e 68/68)** |
-| 15 | Save a custom template (turn one of your documents into a reusable template) | **Done (Day 31 — unit 422/422; live e2e pending the owner applying the Day 31 migration)** |
+| 15 | Save a custom template (turn one of your documents into a reusable template) | **Done (Day 31 — unit 422/422; live e2e 29/29, closed 2026-11-21 after the owner applied the migration)** |
+| 16 | Stamps / watermarks (a text watermark, an image watermark and a rubber stamp on PDF pages) | **Done (Day 32 — unit 432/432; live e2e 18/18, closed 2026-11-24)** |
 
 E-signatures are deferred (needs a legal/verification decision).
 No billing until merchant eligibility/tax/compliance is verified.

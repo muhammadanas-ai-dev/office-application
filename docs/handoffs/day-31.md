@@ -87,17 +87,14 @@ started".
 - **Unit: 422 passed, 0 failed, 9 skipped** (8 new: the
   template Storage path (incl. a path-traversal case), the
   save/apply/delete/rename schemas). Typecheck + build pass.
-- **Live e2e: PENDING the migration.** The harness
-  (`scripts/e2e-user-templates-test.mjs`) is written and ready:
-  it saves a document as a template (the row + a separate
-  Storage copy), applies it (a new document with the right
-  MIME type + version 1), renames it, deletes it (the row and
-  the file are gone, the source document survives), checks
-  cross-user isolation and signed-out 307. It currently fails
-  at the first check — "Could not find the table
-  'public.user_templates' in the schema cache" — because the
-  migration is not applied. **Two harness bugs were fixed
-  while writing it**: (1) a `head:true` count query gives a
+- **Live e2e: CLOSED 2026-11-21 (29/29).** The owner applied the
+  migration ("i run the query"), and the harness
+  (`scripts/e2e-user-templates-test.mjs`) passed 29/29: save (the
+  row + a separate Storage copy), gallery listing, apply (a new
+  document with the right MIME type + version 1), rename, delete
+  (the row and the file are gone, the source document survives),
+  cross-user isolation, signed-out 307. **Two harness bugs were
+  fixed while writing it**: (1) a `head:true` count query gives a
   FALSE POSITIVE for table existence (PostgREST returns 404
   with an empty body, which the client does not surface as an
   error) — the check now uses a real `select().limit(1)`; (2)

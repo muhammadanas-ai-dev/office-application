@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "id": "docx-rich",
+      "file": "docx-rich.docx",
+      "format": "docx",
+      "title": "Rich Word document",
+      "features": [
+        "mixed-fonts",
+        "table",
+        "image",
+        "header",
+        "footer",
+        "section-break",
+        "footnote"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip",
+        "page-count"
+      ]
+    },
+    {
+      "id": "doc-rich",
+      "file": "doc-rich.doc",
+      "format": "doc",
+      "title": "Rich Word document (legacy .doc)",
+      "features": [
+        "table",
+        "image",
+        "header",
+        "footer"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "odt-rich",
+      "file": "odt-rich.odt",
+      "format": "odt",
+      "title": "Rich Word document (OpenDocument)",
+      "features": [
+        "table",
+        "image",
+        "header",
+        "footer"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "xlsx-rich",
+      "file": "xlsx-rich.xlsx",
+      "format": "xlsx",
+      "title": "Rich spreadsheet",
+      "features": [
+        "formulas",
+        "chart",
+        "styled-cells",
+        "multiple-sheets"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip",
+        "page-count"
+      ]
+    },
+    {
+      "id": "xls-rich",
+      "file": "xls-rich.xls",
+      "format": "xls",
+      "title": "Rich spreadsheet (legacy .xls)",
+      "features": [
+        "formulas",
+        "chart"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "ods-rich",
+      "file": "ods-rich.ods",
+      "format": "ods",
+      "title": "Rich spreadsheet (OpenDocument)",
+      "features": [
+        "formulas",
+        "chart"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "pptx-rich",
+      "file": "pptx-rich.pptx",
+      "format": "pptx",
+      "title": "Rich presentation",
+      "features": [
+        "table",
+        "chart",
+        "image",
+        "multiple-slides"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip",
+        "page-count"
+      ]
+    },
+    {
+      "id": "ppt-rich",
+      "file": "ppt-rich.ppt",
+      "format": "ppt",
+      "title": "Rich presentation (legacy .ppt)",
+      "features": [
+        "table",
+        "chart",
+        "image"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "odp-rich",
+      "file": "odp-rich.odp",
+      "format": "odp",
+      "title": "Rich presentation (OpenDocument)",
+      "features": [
+        "table",
+        "chart",
+        "image"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "plain-text",
+      "file": "plain.txt",
+      "format": "txt",
+      "title": "Plain text",
+      "features": [
+        "unicode",
+        "tabs"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "data-csv",
+      "file": "data.csv",
+      "format": "csv",
+      "title": "CSV data",
+      "features": [
+        "quoted-fields",
+        "unicode",
+        "empty-value"
+      ],
+      "checks": [
+        "upload",
+        "pdf-export",
+        "round-trip"
+      ]
+    },
+    {
+      "id": "pdf-rich",
+      "file": "pdf-rich.pdf",
+      "format": "pdf",
+      "title": "Rich PDF",
+      "features": [
+        "mixed-fonts",
+        "table",
+        "image",
+        "multiple-pages"
+      ],
+      "checks": [
+        "upload",
+        "pdf-tools",
+        "page-count"
+      ]
+    },
+    {
+      "id": "pdf-scanned",
+      "file": "pdf-scanned.pdf",
+      "format": "pdf",
+      "title": "Scanned PDF (image-only pages)",
+      "features": [
+        "image-only",
+        "ocr"
+      ],
+      "checks": [
+        "upload",
+        "ocr",
+        "pdf-tools",
+        "page-count"
+      ],
+      "expectedText": "Forma Office Compatibility Corpus"
+    },
+    {
+      "id": "pdf-large",
+      "file": "pdf-large.pdf",
+      "format": "pdf",
+      "title": "Large PDF (30 pages)",
+      "features": [
+        "many-pages"
+      ],
+      "checks": [
+        "upload",
+        "pdf-tools",
+        "page-count"
+      ]
+    },
+    {
+      "id": "pdf-protected",
+      "file": "pdf-protected.pdf",
+      "format": "pdf",
+      "title": "Password-protected PDF",
+      "features": [
+        "password-protected"
+      ],
+      "checks": [
+        "upload",
+        "security"
+      ],
+      "password": "corpus123"
+    },
+    {
+      "id": "image-png",
+      "file": "image.png",
+      "format": "png",
+      "title": "Text image (PNG)",
+      "features": [
+        "text"
+      ],
+      "checks": [
+        "upload",
+        "ocr",
+        "images-to-pdf"
+      ],
+      "expectedText": "Forma Office Compatibility Corpus"
+    },
+    {
+      "id": "image-jpg",
+      "file": "image.jpg",
+      "format": "jpg",
+      "title": "Text image (JPG)",
+      "features": [
+        "text"
+      ],
+      "checks": [
+        "upload",
+        "ocr",
+        "images-to-pdf"
+      ],
+      "expectedText": "Forma Office Compatibility Corpus"
+    },
+    {
+      "id": "corrupt-pdf",
+      "file": "corrupt.pdf",
+      "format": "pdf",
+      "title": "Corrupt PDF (truncated)",
+      "features": [
+        "corrupt"
+      ],
+      "checks": [
+        "upload",
+        "corrupt"
+      ]
+    },
+    {
+      "id": "corrupt-docx",
+      "file": "corrupt.docx",
+      "format": "docx",
+      "title": "Corrupt DOCX (truncated)",
+      "features": [
+        "corrupt"
+      ],
+      "checks": [
+        "upload",
+        "corrupt"
+      ]
+    }
+  ]
+}

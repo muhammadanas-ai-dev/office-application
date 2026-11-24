@@ -511,6 +511,7 @@ export function DocumentActions({
   pdfEditHref,
   pdfAnnotateHref,
   pdfDrawHref,
+  pdfStampHref,
   pdfSecurityHref,
   pdfFormHref,
   pdfBuilderHref,
@@ -537,6 +538,8 @@ export function DocumentActions({
   pdfAnnotateHref: string | null;
   /** Link to the PDF draw page, or null when the file is not a PDF. */
   pdfDrawHref: string | null;
+  /** Link to the stamps & watermarks page, or null when the file is not a PDF. */
+  pdfStampHref: string | null;
   /** Link to the PDF security page, or null when the file is not a PDF. */
   pdfSecurityHref: string | null;
   /** Link to the PDF form-fill page, or null when the file is not a PDF. */
@@ -627,6 +630,11 @@ export function DocumentActions({
       {pdfDrawHref ? (
         <a href={pdfDrawHref} className={subtleButtonClass}>
           Draw on PDF
+        </a>
+      ) : null}
+      {pdfStampHref ? (
+        <a href={pdfStampHref} className={subtleButtonClass}>
+          Stamps &amp; watermarks
         </a>
       ) : null}
       {pdfSecurityHref ? (
