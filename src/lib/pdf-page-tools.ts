@@ -28,6 +28,7 @@ import {
 } from "pdf-lib";
 import { PdfEditError } from "@/lib/pdf-edit";
 import { MAX_PDF_PAGES, looksLikePdf } from "@/lib/pdf-tools";
+import { validateFileSignature } from "@/lib/file-signatures";
 
 export type InsertPosition =
   | { kind: "before"; page: number }
@@ -259,6 +260,90 @@ export async function insertPagesFromPdf(
     pages.map((p) => p - 1)
   );
   copied.forEach((page, i) => doc.insertPage(index + i, page));
+  return doc.save();
+}
+
+export const MAX_INSERT_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB per image
+export const INSERT_IMAGE_MARGIN = 36;
+
+/** Insert one new page per image. Each image becomes a page of its
+ *  own, sized from its neighbours (the same as a blank page), with
+ *  the image drawn centred and scaled to fit inside the page minus
+ *  a margin, aspect ratio preserved. The images are inserted in
+ *  the order given. Returns the new bytes. The input PDF is never
+ *  modified. */
+export async function insertPagesFromImageInPdf(
+  bytes: Uint8Array,
+  images: { bytes: Uint8Array; mime: string }[],
+  position: InsertPosition
+): Promise<Uint8Array> {
+  if (images.length === 0) {
+    throw new PdfEditError(400, "Choose at least one image to insert.");
+  }
+  if (images.length > MAX_INSERT_PAGES) {
+    throw new PdfEditError(
+      400,
+      `Insert at most ${MAX_INSERT_PAGES} image pages at once.`
+    );
+  }
+  for (const [i, image] of images.entries()) {
+    if (image.bytes.length === 0) {
+      throw new PdfEditError(400, `Image ${i + 1} is empty.`);
+    }
+    if (image.bytes.length > MAX_INSERT_IMAGE_BYTES) {
+      throw new PdfEditError(
+        400,
+        `Image ${i + 1} must be at most ${MAX_INSERT_IMAGE_BYTES / 1024 / 1024} MB.`
+      );
+    }
+    if (image.mime !== "image/png" && image.mime !== "image/jpeg") {
+      throw new PdfEditError(400, `Image ${i + 1} must be a PNG or a JPEG.`);
+    }
+    // validateFileSignature takes an extension, not a MIME type.
+    const signature = validateFileSignature(
+      image.bytes,
+      image.mime === "image/png" ? "png" : "jpg"
+    );
+    if (!signature.ok) {
+      throw new PdfEditError(400, `Image ${i + 1}: ${signature.error}`);
+    }
+  }
+  const doc = await loadPdf(bytes, "This PDF");
+  const count = doc.getPageCount();
+  if (count + images.length > MAX_PDF_PAGES) {
+    throw new PdfEditError(
+      400,
+      `This PDF would have more than ${MAX_PDF_PAGES} pages.`
+    );
+  }
+  const index = validatePosition(position, count);
+  // The new pages are sized from the neighbour at the insertion
+  // index (or the last page, for an insert at the end) — the same
+  // as a blank page.
+  const size = neighbourSize(doc, index);
+  for (const [i, image] of images.entries()) {
+    const embedded =
+      image.mime === "image/png"
+        ? await doc.embedPng(image.bytes)
+        : await doc.embedJpg(image.bytes);
+    const page = doc.insertPage(index + i, size);
+    // Scale the image to fit inside the page minus a margin on
+    // each side, preserving its aspect ratio, then centre it.
+    const availableWidth = size[0] - INSERT_IMAGE_MARGIN * 2;
+    const availableHeight = size[1] - INSERT_IMAGE_MARGIN * 2;
+    const scale = Math.min(
+      availableWidth / embedded.width,
+      availableHeight / embedded.height
+    );
+    const drawWidth = embedded.width * scale;
+    const drawHeight = embedded.height * scale;
+    page.drawImage(embedded, {
+      x: (size[0] - drawWidth) / 2,
+      y: (size[1] - drawHeight) / 2,
+      width: drawWidth,
+      height: drawHeight,
+    });
+  }
   return doc.save();
 }
 

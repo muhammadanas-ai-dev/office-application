@@ -204,7 +204,7 @@ rehearsal, export slides to images, print handouts/notes.
 | Split PDF by page range | ✅ Done | Day 8; live e2e 24/24 |
 | Extract selected pages | ✅ Done | Split does this |
 | Delete pages | ✅ Done | Day 9; live e2e 21/21 |
-| Insert pages from another PDF or image | 🟡 Partial | Day 18: from another PDF in the library (live e2e 25/25); from an image — not started |
+| Insert pages from another PDF or image | ✅ Done | Day 18: from another PDF in the library (live e2e 25/25); Day 33: from an image (live e2e 16/16) |
 | Reorder pages | ✅ Done | Day 9; live e2e 21/21 |
 | Rotate pages | ✅ Done | Day 8; live e2e 24/24 |
 | Crop pages | ✅ Done | Day 19; live e2e 29/29 |

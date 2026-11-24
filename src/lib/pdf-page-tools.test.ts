@@ -6,7 +6,14 @@
 // pdfjs-dist getTextContent (the drawn text is real text, so it
 // is extractable).
 import { inflateSync } from "node:zlib";
-import { PDFArray, PDFDocument, PDFStream, StandardFonts, rgb } from "pdf-lib";
+import {
+  PDFArray,
+  PDFDocument,
+  PDFName,
+  PDFStream,
+  StandardFonts,
+  rgb,
+} from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import {
   addLinkToPdf,
@@ -15,6 +22,7 @@ import {
   addTextToPdf,
   cropPagesInPdf,
   insertBlankPageInPdf,
+  insertPagesFromImageInPdf,
   insertPagesFromPdf,
 } from "@/lib/pdf-page-tools";
 import { PdfEditError as EditError } from "@/lib/pdf-edit";
@@ -163,6 +171,90 @@ describe("insertPagesFromPdf", () => {
           pages: [1],
           position: { kind: "after", page: 9 },
         }
+      )
+    ).rejects.toThrow(EditError);
+  });
+});
+
+describe("insertPagesFromImageInPdf", () => {
+  // A 1x1 red PNG (the smallest valid PNG).
+  const png = new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+    0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xde, 0x00, 0x00, 0x00,
+    0x0c, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
+    0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xdd, 0x8d, 0xb4, 0x00, 0x00, 0x00,
+    0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+  ]);
+
+  it("inserts one image page at the end, with the image embedded", async () => {
+    const bytes = await insertPagesFromImageInPdf(
+      await fixturePdf(["Page 1", "Page 2"]),
+      [{ bytes: png, mime: "image/png" }],
+      { kind: "end" }
+    );
+    const doc = await PDFDocument.load(bytes);
+    expect(doc.getPageCount()).toBe(3);
+    const texts = await pageTexts(bytes);
+    expect(texts[0]).toContain("Page 1");
+    expect(texts[1]).toContain("Page 2");
+    expect(texts[2].trim()).toBe("");
+    // The new page is the neighbours' size (612x792).
+    const page = doc.getPage(2);
+    expect(page.getWidth()).toBe(612);
+    expect(page.getHeight()).toBe(792);
+    // The image is embedded on the new page.
+    const resources = page.node.get(PDFName.of("Resources"));
+    expect(resources).toBeDefined();
+  });
+
+  it("inserts two images before a page, in order", async () => {
+    const bytes = await insertPagesFromImageInPdf(
+      await fixturePdf(["Page 1", "Page 2"]),
+      [
+        { bytes: png, mime: "image/png" },
+        { bytes: png, mime: "image/png" },
+      ],
+      { kind: "before", page: 2 }
+    );
+    const doc = await PDFDocument.load(bytes);
+    expect(doc.getPageCount()).toBe(4);
+    const texts = await pageTexts(bytes);
+    expect(texts[0]).toContain("Page 1");
+    expect(texts[1].trim()).toBe("");
+    expect(texts[2].trim()).toBe("");
+    expect(texts[3]).toContain("Page 2");
+  });
+
+  it("does not modify the input PDF", async () => {
+    const original = await fixturePdf(["Page 1"]);
+    await insertPagesFromImageInPdf(
+      original,
+      [{ bytes: png, mime: "image/png" }],
+      { kind: "end" }
+    );
+    const doc = await PDFDocument.load(original);
+    expect(doc.getPageCount()).toBe(1);
+  });
+
+  it("rejects a non-image, an empty list and a bad position", async () => {
+    await expect(
+      insertPagesFromImageInPdf(
+        await fixturePdf(["Page 1"]),
+        [{ bytes: new Uint8Array([1, 2, 3]), mime: "image/png" }],
+        { kind: "end" }
+      )
+    ).rejects.toThrow(EditError);
+    await expect(
+      insertPagesFromImageInPdf(await fixturePdf(["Page 1"]), [], {
+        kind: "end",
+      })
+    ).rejects.toThrow(EditError);
+    await expect(
+      insertPagesFromImageInPdf(
+        await fixturePdf(["Page 1"]),
+        [{ bytes: png, mime: "image/png" }],
+        { kind: "after", page: 9 }
       )
     ).rejects.toThrow(EditError);
   });

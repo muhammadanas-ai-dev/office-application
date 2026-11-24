@@ -107,6 +107,30 @@ async function runVersionTool(
   return { version: data.version };
 }
 
+/** POST a FormData body to a PDF-tools route that saves a new
+ *  version in the library (instead of downloading a file).
+ *  Returns the new version number. */
+async function runVersionToolForm(
+  url: string,
+  form: FormData
+): Promise<{ version: number }> {
+  const response = await fetch(url, { method: "POST", body: form });
+  const data = (await response.json().catch(() => ({}))) as {
+    error?: unknown;
+    version?: unknown;
+  };
+  if (!response.ok) {
+    throw new Error(
+      typeof data.error === "string" && data.error
+        ? data.error
+        : "This operation failed."
+    );
+  }
+  if (typeof data.version !== "number")
+    throw new Error("The server did not return a version.");
+  return { version: data.version };
+}
+
 function ToolMessage({
   error,
   success,
@@ -153,10 +177,15 @@ export function PdfToolsClient({
   const [compressSuccess, setCompressSuccess] = useState<string | null>(null);
   const [compressBusy, setCompressBusy] = useState(false);
 
-  // Insert pages (Day 18, part 1).
-  const [insertSource, setInsertSource] = useState<"blank" | "pdf">("blank");
+  // Insert pages (Day 18, part 1; image pages Day 33).
+  const [insertSource, setInsertSource] = useState<"blank" | "pdf" | "image">(
+    "blank"
+  );
   const [insertSourceId, setInsertSourceId] = useState("");
   const [insertSourcePages, setInsertSourcePages] = useState("1");
+  const [insertImageFiles, setInsertImageFiles] = useState<FileList | null>(
+    null
+  );
   const [insertPosition, setInsertPosition] = useState<
     "before" | "after" | "end"
   >("end");
@@ -270,6 +299,28 @@ export function PdfToolsClient({
               kind: insertPosition,
               page: Number(insertPage),
             };
+      if (insertSource === "image") {
+        if (!insertImageFiles || insertImageFiles.length === 0) {
+          throw new Error("Choose at least one PNG or JPEG image to insert.");
+        }
+        const form = new FormData();
+        form.append("source", "image");
+        for (const file of insertImageFiles) {
+          form.append("image", file);
+        }
+        form.append("position_kind", insertPosition);
+        if (insertPosition !== "end") {
+          form.append("position_page", insertPage);
+        }
+        const { version } = await runVersionToolForm(
+          `/api/documents/${document.id}/pdf/insert-pages`,
+          form
+        );
+        setInsertSuccess(
+          `Pages inserted — saved as version ${version}. The original file is untouched.`
+        );
+        return;
+      }
       const source =
         insertSource === "blank"
           ? "blank"
@@ -509,9 +560,10 @@ export function PdfToolsClient({
           Insert pages
         </h2>
         <p className="mt-1 text-xs text-[#667389]">
-          {pageHint} Insert a blank page, or pages from another PDF in this
-          workspace. A blank page matches the size of its neighbours. The result
-          is saved as a new version — the original file is untouched.
+          {pageHint} Insert a blank page, pages from another PDF in this
+          workspace, or pages from images — each image becomes a page of its
+          own, sized like its neighbours with the image centred. The result is
+          saved as a new version — the original file is untouched.
         </p>
         <form onSubmit={onInsert} className="mt-3 space-y-2">
           <div>
@@ -523,13 +575,30 @@ export function PdfToolsClient({
               className={inputClass}
               value={insertSource}
               onChange={(event) =>
-                setInsertSource(event.target.value as "blank" | "pdf")
+                setInsertSource(event.target.value as "blank" | "pdf" | "image")
               }
             >
               <option value="blank">A blank page</option>
               <option value="pdf">Pages from another PDF</option>
+              <option value="image">Pages from an image</option>
             </select>
           </div>
+          {insertSource === "image" ? (
+            <div>
+              <label htmlFor="insert-source-images" className={labelClass}>
+                Images (PNG or JPEG, each at most 10 MB — each becomes one page,
+                in the order chosen)
+              </label>
+              <input
+                id="insert-source-images"
+                type="file"
+                accept="image/png,image/jpeg"
+                multiple
+                className={inputClass}
+                onChange={(event) => setInsertImageFiles(event.target.files)}
+              />
+            </div>
+          ) : null}
           {insertSource === "pdf" ? (
             <>
               <div>

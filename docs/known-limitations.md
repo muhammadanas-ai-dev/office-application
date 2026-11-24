@@ -213,6 +213,14 @@ Updated: 2026-11-18 (Day 12)
   (the standard PDF font, so it renders everywhere). A watermark
   on a scanned-image PDF draws over the image; it does not sit
   behind it.
+- **Insert-from-image limits (Day 33).** One image becomes one
+  page (no multi-image collage, no cropping or rotation of the
+  image at insert time — crop/rotate the image before uploading,
+  or use the page tools after inserting). The image is embedded
+  at its original resolution (no downscaling), so a very large
+  photo makes a large PDF. The new page is sized from its
+  neighbours, so a portrait photo in a landscape document has
+  white space at the sides.
 - **Security limits (Day 20).** No 40-bit encryption (insecure —
   not offered). No password recovery — if the password is
   forgotten, the PDF cannot be opened (that is the point of
