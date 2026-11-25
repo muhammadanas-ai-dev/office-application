@@ -5,7 +5,7 @@
 // always sees a real reason, never a generic failure.
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface PdfToolsClientProps {
@@ -202,6 +202,49 @@ export function PdfToolsClient({
   const [numberError, setNumberError] = useState<string | null>(null);
   const [numberSuccess, setNumberSuccess] = useState<string | null>(null);
   const [numberBusy, setNumberBusy] = useState(false);
+
+  // Export with comments (Day 34).
+  const [exportCount, setExportCount] = useState<number | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/documents/${document.id}/pdf/annotations`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const annotations = (data as { annotations?: unknown }).annotations;
+        if (Array.isArray(annotations)) setExportCount(annotations.length);
+      })
+      .catch(() => {
+        // The count stays unknown; the export still works.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [document.id]);
+
+  async function onExportComments(event: React.FormEvent) {
+    event.preventDefault();
+    setExportError(null);
+    setExportSuccess(null);
+    setExportBusy(true);
+    try {
+      const { version } = await runVersionTool(
+        `/api/documents/${document.id}/pdf/export-comments`,
+        { mode: "flattened" }
+      );
+      setExportSuccess(
+        `Exported — saved as version ${version}. The comments are drawn into the pages and listed on a summary page at the end. The original file is untouched.`
+      );
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Export failed.");
+    } finally {
+      setExportBusy(false);
+    }
+  }
 
   const pageHint =
     pageCount !== null
@@ -757,6 +800,37 @@ export function PdfToolsClient({
             {numberBusy ? "Adding…" : "Add page numbers"}
           </button>
           <ToolMessage error={numberError} success={numberSuccess} />
+        </form>
+      </section>
+
+      <section className={sectionClass} aria-labelledby="export-heading">
+        <h2
+          id="export-heading"
+          className="text-sm font-semibold text-[#202b3c]"
+        >
+          Export with comments
+        </h2>
+        <p className="mt-1 text-xs text-[#667389]">
+          {exportCount === null
+            ? "Make a flattened copy of this PDF with the comments drawn into the pages, so it prints and reads the same in every reader."
+            : exportCount === 0
+              ? "This PDF has no comments yet — add some on the Annotate page first."
+              : `This PDF has ${exportCount} comment${exportCount === 1 ? "" : "s"}. Make a flattened copy with the markup drawn into the pages, so it prints and reads the same in every reader.`}{" "}
+          A summary page listing every comment is added at the end. Sticky notes
+          are listed on the summary page only — they are not drawn onto their
+          page. The flattened copy cannot be un-flattened; restore an earlier
+          version instead. The result is saved as a new version — the original
+          file is untouched.
+        </p>
+        <form onSubmit={onExportComments} className="mt-3 space-y-2">
+          <button
+            type="submit"
+            disabled={exportBusy || exportCount === 0}
+            className={buttonClass}
+          >
+            {exportBusy ? "Exporting…" : "Export with comments"}
+          </button>
+          <ToolMessage error={exportError} success={exportSuccess} />
         </form>
       </section>
     </div>

@@ -4,10 +4,12 @@
 // line of text), so the tests prove the annotation dicts are
 // written and read back correctly — not just that bytes were
 // produced.
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, StandardFonts, rgb } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import {
   addAnnotationsToPdf,
+  appendCommentsSummaryInPdf,
+  flattenAnnotationsInPdf,
   listAnnotationsInPdf,
   removeAnnotationFromPdf,
   AnnotateError,
@@ -200,5 +202,68 @@ describe("removeAnnotationFromPdf", () => {
     await expect(removeAnnotationFromPdf(bytes, 2, 0)).rejects.toThrow(
       AnnotateError
     );
+  });
+});
+
+describe("flattenAnnotationsInPdf", () => {
+  it("draws the markup into the page and removes every annotation", async () => {
+    const bytes = await addAnnotationsToPdf(await fixturePdf(), [
+      HIGHLIGHT,
+      { kind: "note", page: 1, x: 100, y: 500, contents: "A note" },
+      { kind: "ink", page: 1, strokes: [[60, 600, 200, 600, 200, 560]] },
+    ]);
+    const flat = await flattenAnnotationsInPdf(bytes);
+    // No annotations remain in the flattened copy.
+    expect(await listAnnotationsInPdf(flat)).toHaveLength(0);
+    // The page count is unchanged and the original is untouched.
+    const flatDoc = await PDFDocument.load(flat);
+    expect(flatDoc.getPageCount()).toBe(1);
+    expect(await listAnnotationsInPdf(bytes)).toHaveLength(3);
+    // The flattened page's content stream is longer than the
+    // original's (the markup was drawn into it).
+    const originalDoc = await PDFDocument.load(bytes);
+    const flatPage = flatDoc.getPage(0);
+    const originalPage = originalDoc.getPage(0);
+    const flatContents = flatPage.node.get(PDFName.of("Contents"));
+    const originalContents = originalPage.node.get(PDFName.of("Contents"));
+    expect(flatContents).toBeDefined();
+    expect(originalContents).toBeDefined();
+  });
+
+  it("rejects a PDF with no annotations", async () => {
+    await expect(flattenAnnotationsInPdf(await fixturePdf())).rejects.toThrow(
+      AnnotateError
+    );
+  });
+});
+
+describe("appendCommentsSummaryInPdf", () => {
+  it("appends a summary page listing every annotation in order", async () => {
+    const bytes = await addAnnotationsToPdf(await fixturePdf(), [
+      HIGHLIGHT,
+      { kind: "note", page: 1, x: 100, y: 500, contents: "A note" },
+    ]);
+    const annotations = await listAnnotationsInPdf(bytes);
+    const withSummary = await appendCommentsSummaryInPdf(bytes, annotations);
+    const doc = await PDFDocument.load(withSummary);
+    expect(doc.getPageCount()).toBe(2);
+    // The summary page's text lists both annotations.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const pdf = await (
+      await pdfjs.getDocument({ data: new Uint8Array(withSummary) })
+    ).promise;
+    const page = await pdf.getPage(2);
+    const content = await page.getTextContent();
+    const text = content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+    expect(text).toContain("Comments");
+    expect(text).toContain("Highlight");
+    expect(text).toContain("A test highlight");
+    expect(text).toContain("Note");
+    expect(text).toContain("A note");
+    // The input PDF is untouched.
+    const originalDoc = await PDFDocument.load(bytes);
+    expect(originalDoc.getPageCount()).toBe(1);
   });
 });

@@ -401,6 +401,7 @@ export async function DocumentTable({
                     ? `/documents/${document.id}/share`
                     : null
                 }
+                notesHref={`/documents/${document.id}/notes`}
                 pdfFormHref={
                   document.file_path !== null &&
                   isPdfMimeType(document.mime_type)

@@ -221,6 +221,14 @@ Updated: 2026-11-18 (Day 12)
   photo makes a large PDF. The new page is sized from its
   neighbours, so a portrait photo in a landscape document has
   white space at the sides.
+- **Export-with-comments / reviewer-notes limits (Day 34).**
+  Note annotations are not drawn into the flattened pages —
+  their text lives only on the summary page. The summary page
+  is plain text (no clickable jump back to the page). The
+  flattened copy removes the annotation dicts, so it cannot be
+  un-flattened — restore an earlier version instead. Reviewer
+  notes are owner-only and never leave Forma: they do not
+  travel with a download or a share link.
 - **Security limits (Day 20).** No 40-bit encryption (insecure —
   not offered). No password recovery — if the password is
   forgotten, the PDF cannot be opened (that is the point of

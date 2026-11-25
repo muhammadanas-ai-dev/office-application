@@ -521,6 +521,7 @@ export function DocumentActions({
   exportImagesHref,
   versionsHref,
   shareHref,
+  notesHref,
 }: {
   document: { id: string; title: string; folder_id: string | null };
   folders: FolderRow[];
@@ -558,6 +559,8 @@ export function DocumentActions({
   versionsHref: string | null;
   /** Link to the share page, or null when the document has no file yet. */
   shareHref: string | null;
+  /** Link to the reviewer notes page (always available). */
+  notesHref: string | null;
 }) {
   const [renameState, renameAction, renamePending] = useActionState(
     renameDocument,
@@ -660,6 +663,11 @@ export function DocumentActions({
       {shareHref ? (
         <a href={shareHref} className={subtleButtonClass}>
           Share
+        </a>
+      ) : null}
+      {notesHref ? (
+        <a href={notesHref} className={subtleButtonClass}>
+          Notes
         </a>
       ) : null}
       {pdfFormHref ? (

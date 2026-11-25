@@ -29,6 +29,8 @@ import {
 import {
   AnnotateError,
   addAnnotationsToPdf,
+  appendCommentsSummaryInPdf,
+  flattenAnnotationsInPdf,
   listAnnotationsInPdf,
   removeAnnotationFromPdf,
   type AnnotationInput,
@@ -38,6 +40,8 @@ import {
 export {
   AnnotateError,
   addAnnotationsToPdf,
+  appendCommentsSummaryInPdf,
+  flattenAnnotationsInPdf,
   listAnnotationsInPdf,
   removeAnnotationFromPdf,
   getToolsClient,

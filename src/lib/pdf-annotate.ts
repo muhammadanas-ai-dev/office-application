@@ -30,6 +30,8 @@ import {
   PDFName,
   PDFNumber,
   PDFString,
+  StandardFonts,
+  rgb,
 } from "pdf-lib";
 
 export type AnnotationKind =
@@ -390,5 +392,213 @@ export async function removeAnnotationFromPdf(
     throw new AnnotateError(404, "That annotation does not exist.");
   }
   annots.remove(index);
+  return doc.save();
+}
+
+export const HIGHLIGHT_FLATTEN_OPACITY = 0.5;
+export const SUMMARY_CONTENTS_CHARS = 200;
+
+/** The friendly name for an annotation subtype, for the summary. */
+function subtypeLabel(subtype: string): string {
+  switch (subtype) {
+    case "Highlight":
+      return "Highlight";
+    case "Underline":
+      return "Underline";
+    case "StrikeOut":
+      return "Strikeout";
+    case "Text":
+      return "Note";
+    case "Ink":
+      return "Drawing";
+    default:
+      return subtype;
+  }
+}
+
+/** Flatten the annotations INTO the page content (Day 34): the
+ *  highlight quads become translucent rectangles in the
+ *  annotation's own colour, the underline/strikeout become lines,
+ *  the ink strokes become polylines. The annotation dicts are
+ *  then removed, so the result prints and renders identically in
+ *  every reader. Note annotations are NOT drawn (a note has no
+ *  printable geometry beyond its icon) — their text is carried
+ *  by the comments summary page instead. Returns the new bytes.
+ *  The input PDF is never modified. Throws AnnotateError(400, …)
+ *  when the PDF has no annotations. */
+export async function flattenAnnotationsInPdf(
+  pdfBytes: Uint8Array
+): Promise<Uint8Array> {
+  const annotations = await listAnnotationsInPdf(pdfBytes);
+  if (annotations.length === 0) {
+    throw new AnnotateError(400, "This document has no comments to export.");
+  }
+  const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  for (const annotation of annotations) {
+    const page = doc.getPage(annotation.page - 1);
+    const color = rgb(...(annotation.color ?? ANNOTATION_COLORS.highlight));
+    if (
+      (annotation.subtype === "Highlight" ||
+        annotation.subtype === "Underline" ||
+        annotation.subtype === "StrikeOut") &&
+      annotation.quadPoints
+    ) {
+      const quads = annotation.quadPoints;
+      for (let q = 0; q + 8 <= quads.length; q += 8) {
+        // [top-left, top-right, bottom-left, bottom-right]
+        const [tlx, tly, trx, , blx, bly, brx] = quads.slice(q, q + 8);
+        if (annotation.subtype === "Highlight") {
+          page.drawRectangle({
+            x: blx,
+            y: bly,
+            width: trx - tlx,
+            height: tly - bly,
+            color,
+            opacity: HIGHLIGHT_FLATTEN_OPACITY,
+          });
+        } else if (annotation.subtype === "Underline") {
+          page.drawLine({
+            start: { x: blx, y: bly + 1 },
+            end: { x: brx, y: bly + 1 },
+            thickness: 1.5,
+            color,
+          });
+        } else {
+          const midY = (tly + bly) / 2;
+          page.drawLine({
+            start: { x: blx, y: midY },
+            end: { x: brx, y: midY },
+            thickness: 1.5,
+            color,
+          });
+        }
+      }
+    } else if (annotation.subtype === "Ink" && annotation.inkList) {
+      for (const stroke of annotation.inkList) {
+        for (let s = 0; s + 4 <= stroke.length; s += 2) {
+          page.drawLine({
+            start: { x: stroke[s], y: stroke[s + 1] },
+            end: { x: stroke[s + 2], y: stroke[s + 3] },
+            thickness: INK_LINE_WIDTH,
+            color,
+          });
+        }
+      }
+    }
+    // Note annotations (subtype Text) are not drawn — see the
+    // docstring.
+  }
+  // Remove every annotation dict, so the copy is truly flat.
+  for (let p = 0; p < doc.getPageCount(); p++) {
+    doc.getPage(p).node.delete(PDFName.of("Annots"));
+  }
+  return doc.save();
+}
+
+/** Append a comments summary page (Day 34) listing every
+ *  annotation in page order: the page, the kind, the author and
+ *  date when the dict carries them, and the Contents text
+ *  (truncated at 200 chars). One or more pages are appended as
+ *  needed. Returns the new bytes. The input PDF is never
+ *  modified. */
+export async function appendCommentsSummaryInPdf(
+  pdfBytes: Uint8Array,
+  annotations: ListedAnnotation[]
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const PAGE_WIDTH = 612;
+  const PAGE_HEIGHT = 792;
+  const MARGIN = 54;
+  const LINE_HEIGHT = 15;
+  const BODY_SIZE = 10;
+
+  function wrap(text: string, size: number, useFont = font): string[] {
+    const maxWidth = PAGE_WIDTH - MARGIN * 2;
+    const words = text.split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let line = "";
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (useFont.widthOfTextAtSize(candidate, size) > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+    return lines.length ? lines : [""];
+  }
+
+  let page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  let y = PAGE_HEIGHT - MARGIN;
+  page.drawText("Comments", {
+    x: MARGIN,
+    y,
+    size: 18,
+    font: bold,
+    color: rgb(0.13, 0.16, 0.24),
+  });
+  y -= 26;
+  page.drawText(
+    `${annotations.length} comment${annotations.length === 1 ? "" : "s"} in this document, in page order.`,
+    { x: MARGIN, y, size: BODY_SIZE, font, color: rgb(0.4, 0.44, 0.54) }
+  );
+  y -= LINE_HEIGHT * 2;
+
+  function ensureSpace(lines: number) {
+    if (y - lines * LINE_HEIGHT < MARGIN) {
+      page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      y = PAGE_HEIGHT - MARGIN;
+    }
+  }
+
+  for (const [i, annotation] of annotations.entries()) {
+    const header = `${i + 1}. Page ${annotation.page} — ${subtypeLabel(annotation.subtype)}`;
+    const meta: string[] = [];
+    if (annotation.author) meta.push(`by ${annotation.author}`);
+    if (annotation.date) meta.push(annotation.date.replace(/^D:/, ""));
+    const contents = annotation.contents
+      ? annotation.contents.length > SUMMARY_CONTENTS_CHARS
+        ? `${annotation.contents.slice(0, SUMMARY_CONTENTS_CHARS)}…`
+        : annotation.contents
+      : "(no text)";
+    const headerLines = wrap(header, BODY_SIZE, bold);
+    const metaLines = meta.length ? wrap(meta.join(" · "), BODY_SIZE) : [];
+    const bodyLines = wrap(contents, BODY_SIZE);
+    ensureSpace(headerLines.length + metaLines.length + bodyLines.length + 1);
+    for (const line of headerLines) {
+      page.drawText(line, {
+        x: MARGIN,
+        y,
+        size: BODY_SIZE,
+        font: bold,
+        color: rgb(0.13, 0.16, 0.24),
+      });
+      y -= LINE_HEIGHT;
+    }
+    for (const line of [...metaLines, ...bodyLines]) {
+      page.drawText(line, {
+        x: MARGIN,
+        y,
+        size: BODY_SIZE,
+        font,
+        color: rgb(0.13, 0.16, 0.24),
+      });
+      y -= LINE_HEIGHT;
+    }
+    y -= LINE_HEIGHT / 2;
+  }
+  // pdf-lib writes an empty Annots array on a freshly added
+  // page — remove it, so a flattened copy carries no Annots key
+  // at all.
+  for (let p = 0; p < doc.getPageCount(); p++) {
+    const annots = doc.getPage(p).node.Annots();
+    if (annots && annots.size() === 0) {
+      doc.getPage(p).node.delete(PDFName.of("Annots"));
+    }
+  }
   return doc.save();
 }

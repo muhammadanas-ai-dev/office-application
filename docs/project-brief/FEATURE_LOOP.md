@@ -65,6 +65,7 @@ the owner's instruction of 2026-11-18; Supabase Storage stays
 | 15 | Save a custom template (turn one of your documents into a reusable template) | **Done (Day 31 — unit 422/422; live e2e 29/29, closed 2026-11-21 after the owner applied the migration)** |
 | 16 | Stamps / watermarks (a text watermark, an image watermark and a rubber stamp on PDF pages) | **Done (Day 32 — unit 432/432; live e2e 18/18, closed 2026-11-24)** |
 | 17 | Insert pages from an image (each uploaded PNG/JPEG becomes a new page) | **Done (Day 33 — unit 436/436; live e2e 16/16, closed 2026-11-25)** |
+| 18 | Export with comments + local reviewer notes (the Day 25 half) | **Done (Day 34 — export live e2e 13/13; the notes round-trip runs after the owner applies the migration)** |
 
 E-signatures are deferred (needs a legal/verification decision).
 No billing until merchant eligibility/tax/compliance is verified.

@@ -545,6 +545,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      document_notes: {
+        Row: {
+          id: string;
+          document_id: string;
+          workspace_id: string;
+          user_id: string;
+          body: string;
+          resolved: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          workspace_id: string;
+          user_id: string;
+          body: string;
+          resolved?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          workspace_id?: string;
+          user_id?: string;
+          body?: string;
+          resolved?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
