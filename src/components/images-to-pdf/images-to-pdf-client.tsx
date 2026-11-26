@@ -70,7 +70,7 @@ export function ImagesToPdfClient({ images }: ImagesToPdfClientProps) {
       <div>
         <h1 className="text-xl font-semibold text-[#202b3c]">Images to PDF</h1>
         <p className="mt-1 text-sm text-[#5b6b7f]">
-          Choose your images (PNG or JPEG) and create one PDF — one page per
+          Choose your images (PNG, JPEG, WEBP or TIFF) and create one PDF — one page per
           image, each fit on an A4 page. The images stay in your library
           untouched.
         </p>
@@ -78,7 +78,7 @@ export function ImagesToPdfClient({ images }: ImagesToPdfClientProps) {
 
       {images.length === 0 ? (
         <p className="text-sm text-[#5b6b7f]">
-          You have no images in your library yet — upload a PNG or JPEG first,
+          You have no images in your library yet — upload a PNG, JPEG, WEBP or TIFF first,
           then come back here.
         </p>
       ) : (

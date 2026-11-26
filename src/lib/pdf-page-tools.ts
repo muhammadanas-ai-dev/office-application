@@ -26,6 +26,7 @@ import {
   rgb,
   type Color,
 } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import { PdfEditError } from "@/lib/pdf-edit";
 import { MAX_PDF_PAGES, looksLikePdf } from "@/lib/pdf-tools";
 import { validateFileSignature } from "@/lib/file-signatures";
@@ -494,9 +495,11 @@ export async function addTextToPdf(
     y: number;
     text: string;
     size: number;
-    font: DrawFontName;
+    /** A built-in font, or "custom" with `customFontBytes`. */
+    font: DrawFontName | "custom";
     color: DrawColorName;
-  }
+  },
+  customFontBytes?: Uint8Array
 ): Promise<Uint8Array> {
   const text = input.text.trim();
   if (!text) {
@@ -533,7 +536,23 @@ export async function addTextToPdf(
   ) {
     throw new PdfEditError(400, "The position must lie inside the page.");
   }
-  const font = await doc.embedFont(DRAW_FONTS[input.font]);
+  let font;
+  if (input.font === "custom") {
+    if (!customFontBytes) {
+      throw new PdfEditError(400, "Choose one of your uploaded fonts.");
+    }
+    doc.registerFontkit(fontkit);
+    try {
+      font = await doc.embedFont(customFontBytes, { subset: true });
+    } catch {
+      throw new PdfEditError(
+        400,
+        "This font could not be embedded — the file may be corrupt or an unsupported variant."
+      );
+    }
+  } else {
+    font = await doc.embedFont(DRAW_FONTS[input.font]);
+  }
   page.drawText(text, {
     x: input.x,
     y: input.y,
@@ -615,5 +634,205 @@ export async function addShapeToPdf(
       });
     }
   }
+  return doc.save();
+}
+
+// ------------------------------------------------------------------
+// Page resize (F27)
+// ------------------------------------------------------------------
+
+/** Standard page sizes in points (portrait). */
+export const PAGE_SIZE_PRESETS = {
+  a4: { label: "A4", width: 595.28, height: 841.89 },
+  letter: { label: "Letter", width: 612, height: 792 },
+  a5: { label: "A5", width: 419.53, height: 595.28 },
+  legal: { label: "Legal", width: 612, height: 1008 },
+} as const;
+export type PageSizePreset = keyof typeof PAGE_SIZE_PRESETS;
+
+export type ResizeTarget =
+  | { kind: "preset"; preset: PageSizePreset }
+  | { kind: "scale"; percent: number };
+
+export interface ResizePagesInput {
+  /** 1-based pages to resize; empty means all pages. */
+  pages: number[];
+  target: ResizeTarget;
+}
+
+/** The scale + offset that fits a source page inside a target
+ *  page, centred, keeping the aspect ratio. */
+export function computeFitTransform(
+  srcWidth: number,
+  srcHeight: number,
+  dstWidth: number,
+  dstHeight: number
+): { scale: number; x: number; y: number; width: number; height: number } {
+  const scale = Math.min(dstWidth / srcWidth, dstHeight / srcHeight);
+  const width = srcWidth * scale;
+  const height = srcHeight * scale;
+  return {
+    scale,
+    x: (dstWidth - width) / 2,
+    y: (dstHeight - height) / 2,
+    width,
+    height,
+  };
+}
+
+/** Validate a resize request against the page count. */
+export function validateResizeInput(
+  input: ResizePagesInput,
+  pageCount: number
+): { pages: number[]; target: ResizeTarget } {
+  const pages =
+    input.pages.length === 0
+      ? Array.from({ length: pageCount }, (_, i) => i + 1)
+      : [...new Set(input.pages)].sort((a, b) => a - b);
+  for (const page of pages) {
+    if (!Number.isInteger(page) || page < 1 || page > pageCount) {
+      throw new PdfEditError(
+        400,
+        `This PDF has ${pageCount} page(s) — page ${page} does not exist.`
+      );
+    }
+  }
+  if (input.target.kind === "scale") {
+    const percent = input.target.percent;
+    if (!Number.isFinite(percent) || percent < 10 || percent > 400) {
+      throw new PdfEditError(
+        400,
+        "Scale must be between 10% and 400%."
+      );
+    }
+  }
+  return { pages, target: input.target };
+}
+
+/**
+ * Resize the selected pages. Each resized page is re-created
+ * at the target size with the original page drawn into it
+ * (embedded as a form XObject): for a preset, fitted and
+ * centred keeping the aspect ratio; for a scale, the page
+ * box itself grows/shrinks by the percentage. Unselected
+ * pages are copied unchanged. Annotations on resized pages
+ * do not carry over (the page is rebuilt) — the honest limit
+ * of the embed approach, stated in the UI.
+ */
+export async function resizePagesInPdf(
+  bytes: Uint8Array,
+  input: ResizePagesInput
+): Promise<Uint8Array> {
+  const src = await loadPdf(bytes, "This PDF");
+  const pageCount = src.getPageCount();
+  const { pages, target } = validateResizeInput(input, pageCount);
+  const selected = new Set(pages);
+  const out = await PDFDocument.create();
+  const embedded = await out.embedPdf(
+    bytes,
+    Array.from({ length: pageCount }, (_, i) => i)
+  );
+  for (let i = 0; i < pageCount; i++) {
+    const pageNumber = i + 1;
+    if (!selected.has(pageNumber)) {
+      const [copied] = await out.copyPages(src, [i]);
+      out.addPage(copied);
+      continue;
+    }
+    const srcPage = src.getPage(i);
+    const { width: srcWidth, height: srcHeight } = srcPage.getSize();
+    const embeddedPage = embedded[i];
+    if (target.kind === "preset") {
+      const preset = PAGE_SIZE_PRESETS[target.preset];
+      const fit = computeFitTransform(
+        srcWidth,
+        srcHeight,
+        preset.width,
+        preset.height
+      );
+      const page = out.addPage([preset.width, preset.height]);
+      page.drawPage(embeddedPage, {
+        x: fit.x,
+        y: fit.y,
+        width: fit.width,
+        height: fit.height,
+      });
+    } else {
+      const factor = target.percent / 100;
+      const page = out.addPage([srcWidth * factor, srcHeight * factor]);
+      page.drawPage(embeddedPage, {
+        x: 0,
+        y: 0,
+        width: srcWidth * factor,
+        height: srcHeight * factor,
+      });
+    }
+  }
+  return out.save();
+}
+
+// ------------------------------------------------------------------
+// Insert an image onto an existing page (F38)
+// ------------------------------------------------------------------
+
+export const MIN_INSERTED_IMAGE_WIDTH = 10;
+
+/**
+ * Draw an image onto one page of a PDF. (x, y) is the
+ * image's bottom-left corner in PDF points; `width` is in
+ * points and the height follows the image's aspect ratio.
+ * The image must fit fully inside the page. PNG/JPEG only
+ * at this layer — the route decodes WEBP/TIFF to PNG first
+ * (the F34 path).
+ */
+export async function insertImageOnPageInPdf(
+  bytes: Uint8Array,
+  image: { bytes: Uint8Array; mimeType: string },
+  input: { page: number; x: number; y: number; width: number }
+): Promise<Uint8Array> {
+  const doc = await loadPdf(bytes, "This PDF");
+  const count = doc.getPageCount();
+  validatePageNumber(input.page, count);
+  const page = doc.getPage(input.page - 1);
+  const pageWidth = page.getWidth();
+  const pageHeight = page.getHeight();
+  if (
+    !Number.isFinite(input.width) ||
+    input.width < MIN_INSERTED_IMAGE_WIDTH ||
+    input.width > pageWidth
+  ) {
+    throw new PdfEditError(
+      400,
+      `The image width must be between ${MIN_INSERTED_IMAGE_WIDTH} and ${Math.floor(pageWidth)} pt on this page.`
+    );
+  }
+  let embedded;
+  if (image.mimeType === "image/png") {
+    embedded = await doc.embedPng(image.bytes);
+  } else if (image.mimeType === "image/jpeg") {
+    embedded = await doc.embedJpg(image.bytes);
+  } else {
+    throw new PdfEditError(400, "Only PNG and JPEG images can be inserted.");
+  }
+  const height = (input.width * embedded.height) / embedded.width;
+  if (
+    !Number.isFinite(input.x) ||
+    !Number.isFinite(input.y) ||
+    input.x < 0 ||
+    input.y < 0 ||
+    input.x + input.width > pageWidth ||
+    input.y + height > pageHeight
+  ) {
+    throw new PdfEditError(
+      400,
+      "The image must fit fully inside the page at that position and width — move it in from the edge or make it narrower."
+    );
+  }
+  page.drawImage(embedded, {
+    x: input.x,
+    y: input.y,
+    width: input.width,
+    height,
+  });
   return doc.save();
 }

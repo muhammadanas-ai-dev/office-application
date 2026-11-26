@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DOCUMENTS_BUCKET } from "@/lib/storage";
 import { resolveShare } from "@/lib/sharing.server";
+import { logError } from "@/lib/log";
 
 export async function GET(
   _request: Request,
@@ -29,7 +30,7 @@ export async function GET(
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(resolved.document.file_path, 3600);
   if (signError || !signed) {
-    console.error("[share download]", signError);
+    logError("share download", signError);
     return NextResponse.json(
       { error: "Could not prepare the download." },
       { status: 500 }

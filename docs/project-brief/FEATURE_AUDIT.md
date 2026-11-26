@@ -1,6 +1,6 @@
 # Forma Office — Feature Audit (what is built, what is not)
 
-**Date:** 2026-11-18
+**Date:** 2026-11-18 (last reconciled 2026-11-26, checklist completion run F19–F38)
 **Source:** the owner's uploaded `WPS_FEATURE_PARITY_CHECKLIST.md`
 (2026-11-18), checked against the actual app
 (`~/workspace/nextjs-supabase-app/` — code, routes, tests, handoffs).
@@ -55,7 +55,7 @@ ONLYOFFICE); the browser proof is the missing piece.
 | Supabase Auth + secure metadata schema | ✅ Done | Day 3; 8 tables, RLS local 18/18 + live 9/9 |
 | Real Writer/Spreadsheet/Presentation editing engine | ✅ Done (via the editor) | ONLYOFFICE Docs 10.0.0, Days 5–6; API-level proof 41/41 |
 | Import / edit / save / export / print | 🟡 Partial | Import ✅, edit ✅, save ✅ (v2 on callback), export ✅ (PDF, Day 7 — blocked on the docserver), print ✅ via the editor |
-| Feature-entitlement structure (Free/Premium split later) | 🟡 Partial | `plan_key` exists on workspaces; no premium gating, no plan UI (skipped) |
+| Feature-entitlement structure (Free/Premium split later) | ⏭️ Skipped | `plan_key` exists on workspaces; premium gating + plan UI skipped by the owner's 2026-11-18 decision (no billing until merchant eligibility is verified) |
 | Cloud drive / quotas / sync / backup / multi-device | ⏭️ Skipped | Per the owner's instruction |
 
 ## 2. Writer (§3)
@@ -64,22 +64,22 @@ ONLYOFFICE); the browser proof is the missing piece.
 
 | Item | Status | Evidence / note |
 |---|---|---|
-| Create a blank document | 🟡 Partial | The button exists but creates a title-only row with no file (see conflict 2) — it cannot be opened or edited |
+| Create a blank document | ✅ Done | Day 15 — blank documents are created as real files that open and edit (this row was stale) |
 | Open an existing document from the device | ✅ Done | Upload (14 formats) + open in the editor, Days 4–6 |
 | Edit an imported document | ✅ Done (via the editor) | Save callback creates version 2, proven live |
-| Save / Save As / Download | 🟡 Partial | Save ✅ (editor callback), Download ✅ (signed-URL route), Save As ❌ (no "save a copy under a new name" — Duplicate is the closest) |
+| Save / Save As / Download | 🔶 Partial | Save ✅ (editor callback), Download ✅ (signed-URL route), Save As — the library's Duplicate action is the save-a-copy path (new document, own title) |
 | Export to supported formats | ✅ Done | PDF export Day 7; conversion hub Day 14 (matrix live, conversion blocked on the docserver) |
 | Print and print preview | ✅ Done (via the editor) | ONLYOFFICE print; not proven in a browser |
 | Recent documents list | ✅ Done | /recent page, Day 4 |
-| Multiple open documents / document tabs | ❌ Not started | One document at a time in the editor |
-| Document properties and metadata | ❌ Not started | No properties panel |
-| Auto-save draft to local browser storage | ❌ Not started | The editor autosaves to the server, not to local storage |
-| Recover a locally saved draft after a browser restart | ❌ Not started | No local draft recovery |
+| Multiple open documents / document tabs | ✅ Done | Day 28 — document tabs in the workspace (this row was stale). The editor itself still opens one document per tab |
+| Document properties and metadata | ✅ Done | F29 (2026-11-26) — Properties page per document (library link): Forma facts for every document + the PDF information dictionary (title/author/subject/keywords/creator/producer/dates/pages); title/author/subject/keywords editable, written into the file as a new version. Unit 4 new; live e2e 8/8 |
+| Auto-save draft to local browser storage | 🔶 Partial | F35 (2026-11-26) — Forma's own writing surfaces auto-save locally: reviewer-note composer + Draw Add-text box (localStorage, per user+document+surface, debounced). The document editor's drafts are its own server autosave (docserver) |
+| Recover a locally saved draft after a browser restart | 🔶 Partial | F35 (2026-11-26) — the same surfaces restore the draft on return with a 'Draft restored' note + Discard; drafts expire after 7 days. Editor documents: docserver territory |
 | Undo and redo history | ✅ Done (via the editor) | ONLYOFFICE undo/redo |
-| Document password protection | ❌ Not started | No UI for it |
+| Document password protection | 🔶 Partial | PDFs ✅ (Day 20 — protect/unlock with passwords on the Security page). Office documents: the editor's protection, docserver territory |
 | Read-only / restricted-editing mode | ❌ Not started | No UI for it |
-| Document compare and merge | ❌ Not started | |
-| File repair / recovery utilities | ❌ Not started | |
+| Document compare and merge | 🔶 Partial | Merge ✅ for PDFs (Day 8 merge tool + F28/F36 batch paths). Compare (diff two documents) — not started; office compare is an editor feature (docserver) |
+| File repair / recovery utilities | ✅ Done | F36 (2026-11-26) — Repair PDF on the tools page: qpdf rebuild (xref/object streams), qpdf's own problem notes returned; a healthy unchanged file saves no new version. (For PDFs; office-file repair stays with the docserver.) Unit 2 new; live e2e 6/6 |
 
 ### 3.2–3.11 Ribbons (font, paragraph, find/replace, insert, tables, images, page layout, references, review, view)
 
@@ -188,12 +188,12 @@ rehearsal, export slides to images, print handouts/notes.
 |---|---|---|
 | Open PDF from device | ✅ Done | Upload + open, Days 4–5 |
 | Render pages accurately | ✅ Done | PDF.js viewer in the PDF pages; ONLYOFFICE pdf view |
-| Page thumbnails and navigation | 🟡 Partial | Pages render with navigation; no thumbnail strip |
-| Zoom, fit page and fit width | 🟡 Partial | The PDF.js viewer renders at a fixed scale; no zoom/fit controls |
-| Search text in PDF | ❌ Not started | No search box in the viewer |
-| Bookmarks / outline navigation | ❌ Not started | |
-| Single / facing / continuous modes | ❌ Not started | |
-| Full-screen / reading mode | ❌ Not started | |
+| Page thumbnails and navigation | ✅ Done | F21 (2026-11-26) — a thumbnail strip (first 60 pages) with the current page highlighted, plus a page-number jump input |
+| Zoom, fit page and fit width | ✅ Done | F21 (2026-11-26) — zoom 50–250%, Fit width and Fit page in Annotate mode; zoom also drives Read mode |
+| Search text in PDF | ✅ Done | F20 (2026-11-26) — a search box on the Annotate page; per-page matches with highlighted snippets, match case / whole word, click a result to open its page; live e2e 9/9 |
+| Bookmarks / outline navigation | ✅ Done | F21 (2026-11-26) — the Outline panel resolves the PDF's bookmarks to pages (unit 4/4 on the resolver) |
+| Single / facing / continuous modes | ✅ Done | F21 (2026-11-26) — Read mode: Continuous (scroll) and Facing (two-page grid); Single is the Annotate surface |
+| Full-screen / reading mode | ✅ Done | F21 (2026-11-26) — the Read mode plus a Full screen button on the viewer |
 | Print PDF | ✅ Done (via the editor) | ONLYOFFICE pdf print |
 
 ### 6.2 Page operations
@@ -208,10 +208,10 @@ rehearsal, export slides to images, print handouts/notes.
 | Reorder pages | ✅ Done | Day 9; live e2e 21/21 |
 | Rotate pages | ✅ Done | Day 8; live e2e 24/24 |
 | Crop pages | ✅ Done | Day 19; live e2e 29/29 |
-| Page size / resize tools | ❌ Not started | |
+| Page size / resize tools | ✅ Done | F27 (2026-11-26) — Resize pages on the PDF tools page: standard sizes (A4/Letter/A5/Legal, content fitted + centred, aspect kept) or scale 10–400%, all pages or a selection; unselected pages copied unchanged. Resized pages are rebuilt (embedded), so annotations on them do not carry over — stated in the UI. Unit 4 new (45 in pdf-page-tools); live e2e 8/8 |
 | Add page numbers | ✅ Done | Day 18; live e2e 25/25 |
-| Add page labels | ❌ Not started | |
-| Batch page operations | ❌ Not started | |
+| Add page labels | ✅ Done | F37 (2026-11-26) — Page labels section on the PDF tools page: label ranges (start page, style decimal/roman/letters/none, prefix, start value) with a live preview; writes the /PageLabels number tree, saved as a new version. Verified against PDF.js (what readers show). Unit 4 new; live e2e 5/5 |
+| Batch page operations | ✅ Done | F36 (2026-11-26) — library Batch page tools: rotate all pages (90/180/270) or compress (eBook) over up to 10 ticked PDFs; each saves a new version; per-document results listed. Unit via pdf-ops; live e2e 6/6 (with repair) |
 
 ### 6.3 Content editing
 
@@ -219,12 +219,12 @@ rehearsal, export slides to images, print handouts/notes.
 |---|---|---|
 | Edit existing PDF text (where the structure permits) | ✅ Done | Day 9; fonts + colour preserved Day 10; live e2e 21/21 + 29/29 |
 | Add text to PDF | ✅ Done | Day 19; live e2e 29/29 |
-| Delete or move editable text objects | ❌ Not started | |
+| Delete or move editable text objects | ❌ Not started | Editing a run's text ✅ (Day 9); moving a run ❌. Permanent removal of text is covered differently — redaction (F26) deletes the runs under a marked area |
 | Change supported font styling | ✅ Done | Day 10 (closest standard font + fill colour) |
-| Insert, move, resize and replace images | 🟡 Partial | Replace image ✅ (Day 9); insert/move/resize ❌ |
+| Insert, move, resize and replace images | 🔶 Partial | Replace image ✅ (Day 9); insert onto a page ✅ F38 (2026-11-26) — Draw page 'Insert image' mode: pick a library image (WEBP/TIFF decoded first), click for the bottom-left corner, set the width; the image must fit fully on the page; saved as a new version. Move/resize of an already-placed image ❌ (delete the version and re-insert) |
 | Add hyperlinks | ✅ Done | Day 19; live e2e 29/29 |
 | Edit vector / graphical objects | ❌ Not started | |
-| Add shapes and drawing objects | ❌ Not started | |
+| Add shapes and drawing objects | ✅ Done | Day 19 — rectangle, ellipse and line on the PDF Draw page (live e2e 29/29 at the time). Shapes inside office documents are editor features |
 
 ### 6.4 Annotations and review
 
@@ -246,10 +246,10 @@ rehearsal, export slides to images, print handouts/notes.
 | Create fillable PDF form fields | ✅ Done | Day 12; live e2e 70/70 |
 | Password-protect PDF | ✅ Done | Day 20; live e2e 24/24 (qpdf, 256/128-bit AES) |
 | Set permissions (printing, copying, editing) | ✅ Done | Day 20; live e2e 24/24 |
-| Electronic signature / signature image | ❌ Not started | Deferred — needs a legal/verification decision |
-| Certificate-based digital signature | ❌ Not started | |
-| Validate digital signatures | ❌ Not started | |
-| Redaction (permanently remove data) | ❌ Not started | |
+| Electronic signature / signature image | ⏭️ Skipped | Deferred by decision — needs a legal/verification decision first |
+| Certificate-based digital signature | ⏭️ Skipped | Deferred with e-signatures (legal/verification decision) |
+| Validate digital signatures | ⏭️ Skipped | Deferred with e-signatures (legal/verification decision) |
+| Redaction (permanently remove data) | ✅ Done | F26 (2026-11-26) — drag boxes in the Annotate page's Redact mode; text runs and images under a box are deleted from the content, touching annotations removed, black boxes drawn, and qpdf rebuilds the file so removed image objects leave the file entirely (verified: 0 image dicts remain). Limits: vector path data under a box is covered, not deleted; earlier versions keep the original (stated in the UI). Unit 7 new; live e2e 8/8 |
 | Unlock with a valid password | ✅ Done | Day 20; live e2e 24/24 |
 
 ### 6.6 Conversion, compression and OCR
@@ -257,22 +257,22 @@ rehearsal, export slides to images, print handouts/notes.
 | Item | Status | Evidence / note |
 |---|---|---|
 | Export PDF to DOCX | ✅ Done (blocked live) | Day 14 matrix; the conversion itself is blocked on the docserver (502) |
-| Export PDF to XLSX | ❌ Not started | Not in the Day 14 matrix (the engine's own list has no XLSX for a PDF input) |
-| Export PDF to PPTX | ❌ Not started | Not in the matrix |
-| Export PDF pages to PNG / JPG | ❌ Not started | |
+| Export PDF to XLSX | ✅ Done | F24 (2026-11-26) — text-based export (page text sheets + detected table sheets); the conversion engine has no PDF→XLSX, so Forma does its own (this row was stale) |
+| Export PDF to PPTX | ✅ Done | F25 (2026-11-26) — text-based export, one slide per page (this row was stale) |
+| Export PDF pages to PNG / JPG | ✅ Done | Day 22 — Export images on the library/tools (this row was stale) |
 | Convert DOCX to PDF | ✅ Done (blocked live) | Day 7 export; blocked on the docserver |
 | Convert XLSX to PDF | ✅ Done (blocked live) | Day 7 export; blocked on the docserver |
 | Convert PPTX to PDF | ✅ Done (blocked live) | Day 7 export; blocked on the docserver |
-| Convert images to PDF | ❌ Not started | |
-| Batch conversion | ❌ Not started | One document at a time |
+| Convert images to PDF | ✅ Done | Day 22 (PNG/JPEG) + F34 (2026-11-26): WEBP and TIFF uploads accepted (magic-byte signatures), decoded to PNG with sharp inside images-to-PDF; a multi-page TIFF contributes one page per TIFF page. Bucket allowlist extension is in the combined SQL. OCR still takes PNG/JPEG. Unit 6 new; live e2e 4/4 |
+| Batch conversion | ✅ Done | F28 (2026-11-26) — library Batch export bar: up to 10 PDFs to txt/xlsx/pptx in one ZIP; per-file failures listed in batch-errors.txt inside the ZIP. (Batch page operations — the same page tool over many files — remains not started.) Unit 3 new; live e2e 8/8 |
 | Compress PDF (selectable quality/size) | ✅ Done | Day 8 (Ghostscript); no quality selector — one fixed pass |
 | OCR scanned PDF pages | ✅ Done | Day 13; live e2e 22/22 |
 | OCR images and screenshots | ✅ Done | Day 13 (PNG/JPEG) |
 | Searchable PDF output after OCR | ✅ Done (pending migration) | Day 21; the invisible text layer (rendering mode 3) is embedded from the stored OCR word boxes; live e2e pending the Day 21 migration (the `words` column) |
 | Extract text from a PDF | ✅ Done | Day 21; GET /api/documents/[id]/pdf/extract-text downloads a .txt; live e2e 7/8 (the extract-text checks pass, the searchable checks wait on the migration) |
-| Extract text from PDF | ❌ Not started | No plain-text extraction for a normal PDF |
-| Extract tables from PDF | ❌ Not started | |
-| Extract embedded images from PDF | ❌ Not started | (The PDF editor lists images; it does not extract them as files) |
+| Extract text from PDF | ✅ Done | Day 21 — extract text + searchable PDF (this row was stale) |
+| Extract tables from PDF | ✅ Done | F23 (2026-11-26) — aligned-text tables detected from the text layer and downloaded as a ZIP of CSVs (one per table); ruled-only/merged/scanned tables honestly cannot be detected; live e2e 6/6 |
+| Extract embedded images from PDF | ✅ Done | F22 (2026-11-26) — pdfimages extraction to a ZIP from the library (this row was stale) |
 | Multilingual OCR / layout-preserving conversion tests | 🟡 Partial | English + Urdu + Arabic tested (Urdu usable, not perfect); no layout-preservation test |
 
 ## 6. AI (§7) — ⏭️ SKIPPED
@@ -289,8 +289,8 @@ LLM provider/key) for when he restarts it.
 |---|---|
 | Consistent font picker across Writer/Spreadsheet/Presentation | ✅ Done (via the editor) |
 | Search/filter fonts, family + weights/styles, apply to selection, font-size selector with custom entry | ✅ Done (via the editor) |
-| Recently used / favourite fonts, font pairing, theme fonts, fallback/missing-font warning, substitution preview | ❌ Not started (editor defaults only) |
-| User-provided font upload | ❌ Not started |
+| Recently used / favourite fonts, font pairing, theme fonts, fallback/missing-font warning, substitution preview | 🔶 Partial | F33 (2026-11-26): favourites + recently-used ordering DONE for uploaded fonts in the Draw picker (★ favourites first, then last used). Font pairing / theme fonts / missing-font substitution remain editor features (docserver) |
+| User-provided font upload | ✅ Done | F33 (2026-11-26) — Settings 'Your fonts': upload TTF/OTF (magic-byte validated, 10 MB cap, 50 fonts), stored in the documents bucket under fonts/<user>/; usable in the PDF Draw page's Add-text picker (embedded + subset via fontkit). Table arrives with the combined SQL. Unit 4 new; live e2e 5/5 (pre-migration behaviour) |
 | Consistent typography scale / spacing in the app (Inter, brand tokens) | ✅ Done (Day 1) |
 | Accessible contrast and readable toolbar labels | ✅ Done |
 
@@ -319,12 +319,12 @@ full-page render).
 |---|---|
 | Comments and Track Changes (single-user, in the editor) | ✅ Done (via the editor) |
 | Export a document with comments / tracked changes | ✅ Done | Day 34 (comments: a flattened copy + a summary page; live e2e 13/13). Tracked changes stay with the editor |
-| Import comments and revisions | ❌ Not started |
+| Import comments and revisions | ✅ Done | F30 (2026-11-26) — Annotate page 'Import comments': copy every annotation from another library PDF onto the same page numbers (deep copy incl. appearance streams); comments on pages the target lacks are skipped and counted; saved as a new version. (Revisions/track-changes import is an editor feature — blocked on the docserver.) Unit 2 new (20 in pdf-annotate); live e2e 7/7 |
 | Local reviewer notes | ✅ Done | Day 34 (owner-only notes in Forma; the live round-trip runs after the owner applies the migration) |
-| Print reviewed document | ❌ Not started |
+| Print reviewed document | ✅ Done | F31 (2026-11-26) — Print view per PDF (library Print link): every page rendered at print resolution (PDF.js, scale 2), optional comments list printed after the document, print CSS hides the app chrome and puts one PDF page per sheet; the browser dialog handles printer / Save as PDF. First 100 pages per print. Live e2e 4/4 (route + access + print stylesheet; canvas rendering is browser-side) |
 | Copy / export content for sharing outside the app | ✅ Done (Download route) |
 | Real-time co-authoring, presence, cursors, comment threads, permissions, conflict handling, activity history, shareable links (§10.2) | ⏭️ Skipped (cloud-dependent, per the owner's instruction) |
-| "Shared with me" page | ❌ Not started (placeholder, "coming Day 10") |
+| "Shared with me" page | ✅ Done | Day 28 — the /shared page is real (this row was stale) |
 
 ## 10. File-format compatibility (§11)
 
@@ -375,12 +375,12 @@ is down).
 | Sign up / sign in / sign out | ✅ Done (Day 3) |
 | Password reset / account recovery | ✅ Done (Day 3) |
 | Profile settings | ✅ Done (Settings page, Day 3) |
-| User preferences and editor defaults | ❌ Not started |
-| Preferred language and locale | ❌ Not started |
-| Date, time and number-format preferences | ❌ Not started |
-| Theme (light / dark / system) | ❌ Not started |
-| Keyboard shortcut reference | ❌ Not started |
-| Accessibility preferences | ❌ Not started |
+| User preferences and editor defaults | ✅ Done | Day 24 (OCR language, image export format/DPI) + F32 (2026-11-26, appearance/language/accessibility below) |
+| Preferred language and locale | ✅ Done | F32 (2026-11-26) — locale preference (en-GB/en-US/ur-PK) stored on profiles, drives the page language + date formatting; full interface translation is a later step (stated in Settings) |
+| Date, time and number-format preferences | ✅ Done | F32 (2026-11-26) — date order (dmy/mdy/ymd) + number style (1,234.56 / 1.234,56 / 1 234,56) stored on profiles; library dates use them; helpers unit-tested |
+| Theme (light / dark / system) | ✅ Done | F32 (2026-11-26) — stored preference applied app-wide via the appearance layer in globals.css (dark remaps Forma's palette tokens; system follows prefers-color-scheme); the ONLYOFFICE editor keeps its own theme (stated in Settings) |
+| Keyboard shortcut reference | ✅ Done | F32 (2026-11-26) — reference section on the Settings page |
+| Accessibility preferences | ✅ Done | F32 (2026-11-26) — reduce motion, larger text (root scale), high contrast switches on profiles, applied via html classes |
 | Plan / entitlement identifiers, server-side gating, upgrade prompts, usage/limits, checkout, billing history, cancellation, admin override (§12.2) | ⏭️ Skipped (billing/plan UI, per the owner's instruction). Foundation only: `plan_key` on workspaces. The /plan page is a placeholder. |
 
 ## 12. Supabase and application data (§13)
@@ -390,9 +390,9 @@ is down).
 | Supabase Auth | ✅ Done |
 | PostgreSQL tables for profiles and metadata | ✅ Done (8 tables + 2 OCR tables) |
 | RLS on every user-owned table | ✅ Done (local 18/18 + OCR T19, live 9/9) |
-| User preferences and editor settings | ❌ Not started |
+| User preferences and editor settings | 🔶 Partial | User preferences ✅ (Day 24 + F32 settings pack). Editor settings belong to the editor (docserver) |
 | Document metadata only | ✅ Done (documents + versions + stars + folders) |
-| Entitlement / plan records | 🟡 Partial (`plan_key` only; no gating) |
+| Entitlement / plan records | ⏭️ Skipped | `plan_key` only; gating skipped by the owner's decision (no billing yet) |
 | AI usage records | ⏭️ Skipped (AI skipped) |
 | Minimal audit events | ❌ Not started |
 | Database migrations tracked in source control | ✅ Done (6 migrations + OCR + image-upload) |

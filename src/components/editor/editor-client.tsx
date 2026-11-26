@@ -7,6 +7,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { logError } from "@/lib/log";
 
 declare global {
   interface Window {
@@ -51,7 +52,7 @@ export function EditorClient({
           height: "100%",
         });
       } catch (err) {
-        console.error("[editor]", err);
+        logError("editor", err);
         setError("The editor failed to start.");
       }
     };

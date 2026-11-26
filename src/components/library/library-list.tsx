@@ -14,19 +14,26 @@ import { isPdfMimeType } from "@/lib/pdf-tools";
 import { isOcrAcceptedMimeType } from "@/lib/ocr";
 import { getConvertibleTargets } from "@/lib/convert";
 import { createClient } from "@/lib/supabase/server";
-import { getExportImagesHref, withDefaultPreferences } from "@/lib/preferences";
+import {
+  DEFAULT_APPEARANCE,
+  formatDateWithPreference,
+  getExportImagesHref,
+  withDefaultAppearance,
+  withDefaultPreferences,
+  type AppearancePreferences,
+} from "@/lib/preferences";
 import type { DocumentRow, FolderRow } from "@/features/library/queries";
 import {
+  BatchExportBar,
   DocumentActions,
   FolderActions,
 } from "@/components/library/library-forms";
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function formatDate(
+  value: string,
+  appearance: AppearancePreferences = DEFAULT_APPEARANCE
+): string {
+  return formatDateWithPreference(value, appearance);
 }
 
 export function Breadcrumb({
@@ -290,6 +297,7 @@ export async function DocumentTable({
     data: { user },
   } = await supabase.auth.getUser();
   let preferences = withDefaultPreferences({});
+  let appearance = withDefaultAppearance({});
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -300,11 +308,31 @@ export async function DocumentTable({
       imageExportFormat: profile?.image_export_format,
       imageExportDpi: profile?.image_export_dpi,
     });
+    // Appearance columns (F32) in their own query, so the
+    // Day 24 preferences keep working before that migration
+    // is applied.
+    const { data: appearanceRow } = await supabase
+      .from("profiles")
+      .select("locale, date_format, number_format")
+      .eq("id", user.id)
+      .maybeSingle();
+    appearance = withDefaultAppearance({
+      locale: appearanceRow?.locale,
+      dateFormat: appearanceRow?.date_format,
+      numberFormat: appearanceRow?.number_format,
+    });
   }
   if (documents.length === 0) return null;
+  const batchPdfs = documents
+    .filter(
+      (document) =>
+        document.file_path !== null && isPdfMimeType(document.mime_type)
+    )
+    .map((document) => ({ id: document.id, title: document.title }));
   return (
     <section aria-label="Documents">
       <h2 className="mb-2 text-sm font-semibold text-[#202b3c]">Documents</h2>
+      <BatchExportBar documents={batchPdfs} />
       <ul className="flex flex-col gap-2">
         {documents.map((document) => (
           <li
@@ -322,7 +350,7 @@ export async function DocumentTable({
                     {document.file_path
                       ? `${fileTypeLabel(document.mime_type)} · ${formatBytes(document.size_bytes)} · v${document.version} · `
                       : "Blank document — no file yet · "}
-                    Modified {formatDate(document.updated_at)}
+                    Modified {formatDate(document.updated_at, appearance)}
                   </p>
                 </div>
               </div>
@@ -391,6 +419,30 @@ export async function DocumentTable({
                     ? getExportImagesHref(document.id, preferences)
                     : null
                 }
+                extractImagesHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/api/documents/${document.id}/pdf/extract-images`
+                    : null
+                }
+                extractTablesHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/api/documents/${document.id}/pdf/extract-tables`
+                    : null
+                }
+                toXlsxHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/api/documents/${document.id}/pdf/to-xlsx`
+                    : null
+                }
+                toPptxHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/api/documents/${document.id}/pdf/to-pptx`
+                    : null
+                }
                 versionsHref={
                   document.file_path !== null
                     ? `/documents/${document.id}/versions`
@@ -402,6 +454,13 @@ export async function DocumentTable({
                     : null
                 }
                 notesHref={`/documents/${document.id}/notes`}
+                propertiesHref={`/documents/${document.id}/properties`}
+                printHref={
+                  document.file_path !== null &&
+                  isPdfMimeType(document.mime_type)
+                    ? `/documents/${document.id}/print`
+                    : null
+                }
                 pdfFormHref={
                   document.file_path !== null &&
                   isPdfMimeType(document.mime_type)

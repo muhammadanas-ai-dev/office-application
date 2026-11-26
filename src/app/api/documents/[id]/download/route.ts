@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { DOCUMENTS_BUCKET } from "@/lib/storage";
+import { logError } from "@/lib/log";
 
 export async function GET(
   _request: Request,
@@ -28,7 +29,7 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[download]", error);
+    logError("download", error);
     return NextResponse.json(
       { error: "Could not load the document" },
       { status: 500 }
@@ -48,7 +49,7 @@ export async function GET(
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(document.file_path, 3600);
   if (signError || !signed) {
-    console.error("[download]", signError);
+    logError("download", signError);
     return NextResponse.json(
       { error: "Could not prepare the download" },
       { status: 500 }

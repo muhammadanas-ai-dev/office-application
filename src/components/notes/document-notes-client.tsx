@@ -8,6 +8,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDraftAutosave } from "@/components/drafts/use-draft-autosave";
+import { draftStorageKey } from "@/lib/draft-autosave";
 import Link from "next/link";
 
 type Note = {
@@ -27,12 +29,25 @@ const smallButtonClass =
 
 export function DocumentNotesClient({
   document,
+  userId,
 }: {
   document: { id: string; title: string };
+  userId: string;
 }) {
   const [notes, setNotes] = useState<Note[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // Draft auto-save (F35): an unsent note survives a closed
+  // tab or a browser restart (local storage, 7-day expiry).
+  const {
+    restoredAt,
+    dismissRestored,
+    clear: clearSavedDraft,
+  } = useDraftAutosave({
+    storageKey: draftStorageKey(userId, document.id, "note"),
+    value: draft,
+    onRestore: setDraft,
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -84,6 +99,7 @@ export function DocumentNotesClient({
         );
       }
       setDraft("");
+      clearSavedDraft();
       await load();
     } catch (addErr) {
       setError(
@@ -166,6 +182,24 @@ export function DocumentNotesClient({
             className={inputClass}
             aria-label="Note text"
           />
+          {restoredAt ? (
+            <p className="flex flex-wrap items-center gap-2 text-xs text-[#667389]">
+              Draft restored from{" "}
+              {new Date(restoredAt).toLocaleString("en-GB")} — it is saved
+              in this browser until you add the note.
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft("");
+                  clearSavedDraft();
+                  dismissRestored();
+                }}
+                className="text-[#3159c9] hover:underline"
+              >
+                Discard draft
+              </button>
+            </p>
+          ) : null}
           <button type="submit" disabled={busy} className={buttonClass}>
             {busy ? "Saving…" : "Add note"}
           </button>

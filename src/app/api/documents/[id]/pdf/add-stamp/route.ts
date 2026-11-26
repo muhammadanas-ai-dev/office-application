@@ -25,6 +25,7 @@ import {
 } from "@/lib/pdf-stamp.server";
 import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { MAX_STAMP_TEXT_CHARS, STAMP_PRESETS } from "@/lib/pdf-stamp";
+import { logError } from "@/lib/log";
 
 const AddStampBody = z.object({
   text: z.string().min(1, "Enter the stamp text.").max(MAX_STAMP_TEXT_CHARS),
@@ -93,7 +94,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf add-stamp]", error);
+    logError("pdf add-stamp", error);
     return NextResponse.json(
       { error: "Could not add the stamp." },
       { status: 500 }

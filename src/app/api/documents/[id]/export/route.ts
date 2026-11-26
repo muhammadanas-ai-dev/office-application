@@ -26,6 +26,7 @@ import {
 } from "@/lib/editor";
 import { getEditorPublicUrl, getFileTokenSecret } from "@/lib/editor.server";
 import { ExportError, convertToPdf } from "@/lib/export.server";
+import { logError } from "@/lib/log";
 
 /**
  * Per-process, per-user rate limit (see FixedWindowRateLimiter). One
@@ -66,7 +67,7 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[export]", error);
+    logError("export", error);
     return NextResponse.json(
       { error: "Could not load the document" },
       { status: 500 }
@@ -118,7 +119,7 @@ export async function GET(
       expiresAt: Date.now() + FILE_TOKEN_TTL_MS,
     });
   } catch (error) {
-    console.error("[export] file token", error);
+    logError("export file token", error);
     return NextResponse.json(
       { error: "Could not prepare this export" },
       { status: 500 }
@@ -140,7 +141,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[export]", error);
+    logError("export", error);
     return NextResponse.json(
       { error: "Could not export this file to PDF" },
       { status: 500 }

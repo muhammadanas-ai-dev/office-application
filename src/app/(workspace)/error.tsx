@@ -3,6 +3,7 @@
 import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { logError } from "@/lib/log";
 
 export default function WorkspaceError({
   error,
@@ -12,7 +13,7 @@ export default function WorkspaceError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Forma Office workspace error:", error.message);
+    logError("workspace error", error.message, { digest: error.digest });
   }, [error]);
 
   return (

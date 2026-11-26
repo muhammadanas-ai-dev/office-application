@@ -39,6 +39,7 @@ import {
   insertPagesFromPdf,
   type InsertPosition,
 } from "@/lib/pdf-page-tools";
+import { logError } from "@/lib/log";
 
 const PositionBody = z.union([
   z.object({ kind: z.literal("before"), page: z.number().int().min(1) }),
@@ -144,7 +145,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf insert-pages]", error);
+    logError("pdf insert-pages", error);
     return NextResponse.json(
       { error: "Could not insert the pages." },
       { status: 500 }
@@ -232,7 +233,7 @@ async function insertFromImages(request: Request, id: string) {
         { status: error.status }
       );
     }
-    console.error("[pdf insert-pages image]", error);
+    logError("pdf insert-pages image", error);
     return NextResponse.json(
       { error: "Could not insert the pages." },
       { status: 500 }

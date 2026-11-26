@@ -33,6 +33,7 @@ import {
   isConversionSupported,
 } from "@/lib/convert";
 import { DOCUMENTS_BUCKET, buildStoragePath } from "@/lib/storage";
+import { logError } from "@/lib/log";
 
 const convertBodySchema = z.object({
   outputType: z.string().min(1).max(10),
@@ -80,7 +81,7 @@ export async function POST(
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[convert]", error);
+    logError("convert", error);
     return NextResponse.json(
       { error: "Could not load the document" },
       { status: 500 }
@@ -135,7 +136,7 @@ export async function POST(
       expiresAt: Date.now() + FILE_TOKEN_TTL_MS,
     });
   } catch (error) {
-    console.error("[convert] file token", error);
+    logError("convert file token", error);
     return NextResponse.json(
       { error: "Could not prepare this conversion" },
       { status: 500 }
@@ -158,7 +159,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[convert]", error);
+    logError("convert", error);
     return NextResponse.json(
       { error: "Could not convert this file" },
       { status: 500 }
@@ -178,7 +179,7 @@ export async function POST(
       upsert: false,
     });
   if (uploadError) {
-    console.error("[convert] upload", uploadError);
+    logError("convert upload", uploadError);
     return NextResponse.json(
       { error: "Could not save the converted file" },
       { status: 500 }
@@ -197,7 +198,7 @@ export async function POST(
   });
   if (insertError) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([filePath]);
-    console.error("[convert] insert", insertError);
+    logError("convert insert", insertError);
     return NextResponse.json(
       { error: "Could not save the converted file" },
       { status: 500 }
@@ -216,7 +217,7 @@ export async function POST(
     });
   if (versionError) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([filePath]);
-    console.error("[convert] version", versionError);
+    logError("convert version", versionError);
     return NextResponse.json(
       { error: "Could not save the converted file" },
       { status: 500 }

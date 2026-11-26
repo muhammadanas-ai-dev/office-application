@@ -34,6 +34,7 @@ import {
   getPdfSecurity,
   protectPdf,
 } from "@/lib/pdf-security.server";
+import { logError } from "@/lib/log";
 
 const PermissionsBody = z.object({
   print: z.enum(["full", "low", "none"]),
@@ -128,7 +129,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf protect]", error);
+    logError("pdf protect", error);
     return NextResponse.json(
       { error: "Could not protect this PDF." },
       { status: 500 }

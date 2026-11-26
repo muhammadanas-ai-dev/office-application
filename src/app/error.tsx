@@ -3,6 +3,7 @@
 import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { logError } from "@/lib/log";
 
 export default function RootError({
   error,
@@ -14,7 +15,7 @@ export default function RootError({
   useEffect(() => {
     // Log the error to the console for debugging. Never log document
     // contents, tokens or secrets here.
-    console.error("Forma Office error:", error.message, error.digest ?? "");
+    logError("app error", error.message, { digest: error.digest });
   }, [error]);
 
   return (

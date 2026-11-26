@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { DOCUMENTS_BUCKET } from "@/lib/storage";
+import { logError } from "@/lib/log";
 
 export async function GET(
   _request: Request,
@@ -38,7 +39,7 @@ export async function GET(
     .eq("version_number", versionNumber)
     .maybeSingle();
   if (error) {
-    console.error("[version download]", error);
+    logError("version download", error);
     return NextResponse.json(
       { error: "Could not load this version" },
       { status: 500 }
@@ -52,7 +53,7 @@ export async function GET(
     .from(DOCUMENTS_BUCKET)
     .createSignedUrl(versionRow.file_path, 3600);
   if (signError || !signed) {
-    console.error("[version download]", signError);
+    logError("version download", signError);
     return NextResponse.json(
       { error: "Could not prepare the download" },
       { status: 500 }

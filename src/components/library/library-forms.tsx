@@ -519,9 +519,15 @@ export function DocumentActions({
   convertHref,
   extractTextHref,
   exportImagesHref,
+  extractImagesHref,
+  extractTablesHref,
+  toXlsxHref,
+  toPptxHref,
   versionsHref,
   shareHref,
   notesHref,
+  propertiesHref,
+  printHref,
 }: {
   document: { id: string; title: string; folder_id: string | null };
   folders: FolderRow[];
@@ -555,12 +561,22 @@ export function DocumentActions({
   extractTextHref: string | null;
   /** Link to the export-images download, or null when the file is not a PDF. */
   exportImagesHref: string | null;
+  /** Link to the extract-images download, or null when the file is not a PDF. */
+  extractImagesHref: string | null;
+  /** Link to the extract-tables download, or null when the file is not a PDF. */
+  extractTablesHref: string | null;
+  /** Link to the text-based XLSX export, or null when the file is not a PDF. */
+  toXlsxHref: string | null;
+  /** Link to the text-based PPTX export, or null when the file is not a PDF. */
+  toPptxHref: string | null;
   /** Link to the versions page, or null when the file has no versions yet. */
   versionsHref: string | null;
   /** Link to the share page, or null when the document has no file yet. */
   shareHref: string | null;
   /** Link to the reviewer notes page (always available). */
   notesHref: string | null;
+  propertiesHref: string | null;
+  printHref: string | null;
 }) {
   const [renameState, renameAction, renamePending] = useActionState(
     renameDocument,
@@ -655,6 +671,26 @@ export function DocumentActions({
           Export images
         </a>
       ) : null}
+      {extractImagesHref ? (
+        <a href={extractImagesHref} className={subtleButtonClass}>
+          Extract images
+        </a>
+      ) : null}
+      {extractTablesHref ? (
+        <a href={extractTablesHref} className={subtleButtonClass}>
+          Extract tables
+        </a>
+      ) : null}
+      {toXlsxHref ? (
+        <a href={toXlsxHref} className={subtleButtonClass}>
+          Export to XLSX
+        </a>
+      ) : null}
+      {toPptxHref ? (
+        <a href={toPptxHref} className={subtleButtonClass}>
+          Export to PPTX
+        </a>
+      ) : null}
       {versionsHref ? (
         <a href={versionsHref} className={subtleButtonClass}>
           Versions
@@ -668,6 +704,16 @@ export function DocumentActions({
       {notesHref ? (
         <a href={notesHref} className={subtleButtonClass}>
           Notes
+        </a>
+      ) : null}
+      {propertiesHref ? (
+        <a href={propertiesHref} className={subtleButtonClass}>
+          Properties
+        </a>
+      ) : null}
+      {printHref ? (
+        <a href={printHref} className={subtleButtonClass}>
+          Print
         </a>
       ) : null}
       {pdfFormHref ? (
@@ -877,5 +923,214 @@ export function TrashActions({
       <FormError state={restoreState} />
       <FormError state={deleteState} />
     </div>
+  );
+}
+
+/**
+ * Batch export bar (F28): tick several PDFs in the library
+ * and download one ZIP with each of them converted to text,
+ * Excel or PowerPoint (the text-based exporters). A PDF
+ * that cannot be converted is named in batch-errors.txt
+ * inside the ZIP instead of failing the whole batch.
+ */
+export function BatchExportBar({
+  documents,
+}: {
+  documents: { id: string; title: string }[];
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [format, setFormat] = useState("txt");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [pageOp, setPageOp] = useState("rotate-90");
+  const [opBusy, setOpBusy] = useState(false);
+  const [opResults, setOpResults] = useState<
+    { documentId: string; title: string | null; ok: boolean; detail?: string; error?: string; version?: number }[] | null
+  >(null);
+
+  function toggle(id: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function onExport() {
+    setError(null);
+    setNote(null);
+    setBusy(true);
+    try {
+      const response = await fetch("/api/batch/pdf-export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: [...selected], format }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(data?.error ?? "Batch export failed.");
+      }
+      const failures = Number(
+        response.headers.get("X-Forma-Batch-Failures") ?? "0"
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "forma-batch-export.zip";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setNote(
+        failures > 0
+          ? `ZIP downloaded — ${failures} PDF${failures === 1 ? "" : "s"} could not be exported and ${failures === 1 ? "is" : "are"} listed in batch-errors.txt inside it.`
+          : "ZIP downloaded with every selected PDF converted."
+      );
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : "Batch export failed."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onPageOp() {
+    setError(null);
+    setNote(null);
+    setOpResults(null);
+    setOpBusy(true);
+    try {
+      const operation = pageOp.startsWith("rotate")
+        ? {
+            kind: "rotate" as const,
+            degrees: Number(pageOp.split("-")[1]) as 90 | 180 | 270,
+          }
+        : { kind: "compress" as const, level: "ebook" as const };
+      const response = await fetch("/api/batch/pdf-pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: [...selected], operation }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        results?: typeof opResults;
+      } | null;
+      if (!response.ok && !data?.results) {
+        throw new Error(data?.error ?? "Batch operation failed.");
+      }
+      setOpResults(data?.results ?? null);
+    } catch (opError) {
+      setError(
+        opError instanceof Error ? opError.message : "Batch operation failed."
+      );
+    } finally {
+      setOpBusy(false);
+    }
+  }
+
+  if (documents.length < 2) return null;
+  return (
+    <section
+      aria-label="Batch export"
+      className="mb-3 rounded-xl border border-[#dce3ec] bg-white p-3"
+    >
+      <h3 className="text-sm font-semibold text-[#202b3c]">Batch export</h3>
+      <p className="mt-1 text-xs text-[#667389]">
+        Convert several PDFs at once (up to 10) and download them together in
+        one ZIP. The exports are text-based — layout is not reproduced.
+      </p>
+      <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+        {documents.map((document) => (
+          <li key={document.id}>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-[#202b3c]">
+              <input
+                type="checkbox"
+                checked={selected.has(document.id)}
+                onChange={() => toggle(document.id)}
+              />
+              <span className="truncate">{document.title}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          aria-label="Batch export format"
+          value={format}
+          onChange={(event) => setFormat(event.target.value)}
+          className="rounded-lg border border-[#dce3ec] px-2 py-1.5 text-sm"
+        >
+          <option value="txt">Text (.txt)</option>
+          <option value="xlsx">Excel (.xlsx)</option>
+          <option value="pptx">PowerPoint (.pptx)</option>
+        </select>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={busy || selected.size === 0}
+          className="rounded-lg bg-[#3159c9] px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {busy
+            ? "Exporting…"
+            : `Export ${selected.size} PDF${selected.size === 1 ? "" : "s"} as ZIP`}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-2 text-xs text-red-700">
+          {error}
+        </p>
+      ) : null}
+      {note ? <p className="mt-2 text-xs text-[#667389]">{note}</p> : null}
+      <div className="mt-4 border-t border-[#eef1f6] pt-3">
+        <h4 className="text-sm font-semibold text-[#202b3c]">
+          Batch page tools
+        </h4>
+        <p className="mt-1 text-xs text-[#667389]">
+          Run one page operation on every ticked PDF. Each result is saved
+          as a new version of that document — originals stay untouched.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Batch page operation"
+            value={pageOp}
+            onChange={(event) => setPageOp(event.target.value)}
+            className="rounded-lg border border-[#dce3ec] px-2 py-1.5 text-sm"
+          >
+            <option value="rotate-90">Rotate all pages 90°</option>
+            <option value="rotate-180">Rotate all pages 180°</option>
+            <option value="rotate-270">Rotate all pages 270°</option>
+            <option value="compress">Compress (eBook quality)</option>
+          </select>
+          <button
+            type="button"
+            onClick={onPageOp}
+            disabled={opBusy || selected.size === 0}
+            className="rounded-lg border border-[#3159c9] px-3 py-1.5 text-sm font-medium text-[#3159c9] disabled:opacity-50"
+          >
+            {opBusy ? "Working…" : "Apply to selected"}
+          </button>
+        </div>
+        {opResults ? (
+          <ul className="mt-2 space-y-1 text-xs">
+            {opResults.map((result) => (
+              <li
+                key={result.documentId}
+                className={result.ok ? "text-[#667389]" : "text-red-700"}
+              >
+                {result.ok
+                  ? `✓ ${result.title ?? "PDF"} — ${result.detail ?? "done"}, saved as version ${result.version}.`
+                  : `✗ ${result.title ?? result.documentId} — ${result.error ?? "failed"}`}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </section>
   );
 }

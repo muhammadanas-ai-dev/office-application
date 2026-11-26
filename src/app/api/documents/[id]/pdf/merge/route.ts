@@ -21,6 +21,7 @@ import {
 } from "@/lib/pdf-tools.server";
 import { MAX_MERGE_DOCUMENTS } from "@/lib/pdf-tools";
 import { getMergedFileName } from "@/lib/pdf-tools";
+import { logError } from "@/lib/log";
 
 const MergeBody = z.object({
   documentIds: z
@@ -104,7 +105,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf merge]", error);
+    logError("pdf merge", error);
     return NextResponse.json(
       { error: "Could not merge these PDFs." },
       { status: 500 }

@@ -72,3 +72,26 @@ export type ResetRequestInput = z.infer<typeof resetRequestSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
+
+/** The appearance / language / accessibility preferences
+ *  (F32) — the values the Settings appearance form sends.
+ *  Checkboxes arrive as "on" or not at all. */
+export const updateAppearanceSchema = z.object({
+  theme: z.enum(["light", "dark", "system"], {
+    message: "Choose a theme.",
+  }),
+  locale: z.enum(["en-GB", "en-US", "ur-PK"], {
+    message: "Choose a language.",
+  }),
+  dateFormat: z.enum(["dmy", "mdy", "ymd"], {
+    message: "Choose a date format.",
+  }),
+  numberFormat: z.enum(["comma-dot", "dot-comma", "space-comma"], {
+    message: "Choose a number format.",
+  }),
+  reduceMotion: z.boolean(),
+  largerText: z.boolean(),
+  highContrast: z.boolean(),
+});
+
+export type UpdateAppearanceInput = z.infer<typeof updateAppearanceSchema>;

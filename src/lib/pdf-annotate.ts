@@ -602,3 +602,73 @@ export async function appendCommentsSummaryInPdf(
   }
   return doc.save();
 }
+
+// ------------------------------------------------------------------
+// Import annotations from another PDF (F30)
+// ------------------------------------------------------------------
+
+export interface ImportAnnotationsResult {
+  bytes: Uint8Array;
+  imported: number;
+  skipped: number;
+}
+
+/**
+ * Copy every annotation from the source PDF onto the
+ * matching page (same page number) of the target PDF.
+ * Annotations on source pages beyond the target's page
+ * count are skipped and counted. The copy goes through
+ * copyPages so annotation dictionaries — including their
+ * appearance streams and popups — are deep-copied into
+ * the target document properly; the temporary pages are
+ * removed again, leaving their annotation objects
+ * referenced from the real pages.
+ */
+export async function importAnnotationsInPdf(
+  targetBytes: Uint8Array,
+  sourceBytes: Uint8Array
+): Promise<ImportAnnotationsResult> {
+  const target = await PDFDocument.load(targetBytes, {
+    ignoreEncryption: true,
+  });
+  const source = await PDFDocument.load(sourceBytes, {
+    ignoreEncryption: true,
+  });
+  const targetCount = target.getPageCount();
+  const sourceCount = source.getPageCount();
+  let imported = 0;
+  let skipped = 0;
+  const tempPages: number[] = [];
+  for (let i = 0; i < sourceCount; i++) {
+    const sourcePage = source.getPage(i);
+    const annots = sourcePage.node.Annots();
+    const count = annots ? annots.size() : 0;
+    if (count === 0) continue;
+    if (i >= targetCount) {
+      skipped += count;
+      continue;
+    }
+    const [copiedPage] = await target.copyPages(source, [i]);
+    target.addPage(copiedPage);
+    tempPages.push(target.getPageCount() - 1);
+    const copiedAnnots = copiedPage.node.Annots();
+    if (copiedAnnots) {
+      const targetPage = target.getPage(i);
+      for (let a = 0; a < copiedAnnots.size(); a++) {
+        const ref = copiedAnnots.get(a);
+        targetPage.node.addAnnot(ref as never);
+      }
+      imported += copiedAnnots.size();
+    }
+  }
+  for (const index of [...tempPages].sort((a, b) => b - a)) {
+    target.removePage(index);
+  }
+  if (imported === 0 && skipped === 0) {
+    throw new AnnotateError(
+      400,
+      "The source PDF has no comments to import."
+    );
+  }
+  return { bytes: await target.save(), imported, skipped };
+}

@@ -22,6 +22,7 @@ import {
   reorderPagesInPdf,
   saveNewVersion,
 } from "@/lib/pdf-edit.server";
+import { logError } from "@/lib/log";
 
 const EditPagesBody = z.union([
   z.object({
@@ -97,7 +98,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf edit-pages]", error);
+    logError("pdf edit-pages", error);
     return NextResponse.json(
       { error: "Could not change these pages." },
       { status: 500 }

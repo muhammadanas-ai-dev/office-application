@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyFileToken } from "@/lib/editor";
 import { getFileTokenSecret } from "@/lib/editor.server";
+import { logError } from "@/lib/log";
 
 export async function GET(
   request: Request,
@@ -37,7 +38,7 @@ export async function GET(
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[editor file]", error);
+    logError("editor file", error);
     return NextResponse.json(
       { error: "Could not load the document" },
       { status: 500 }
@@ -57,7 +58,7 @@ export async function GET(
     .from("documents")
     .download(document.file_path);
   if (downloadError || !file) {
-    console.error("[editor file]", downloadError);
+    logError("editor file", downloadError);
     return NextResponse.json(
       { error: "Could not read the file" },
       { status: 500 }

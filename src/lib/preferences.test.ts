@@ -2,11 +2,16 @@
 // defaults, the validators, and the export-images link.
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_APPEARANCE,
   DEFAULT_PREFERENCES,
+  appearanceHtmlClasses,
+  formatDateWithPreference,
+  formatNumberWithPreference,
   getExportImagesHref,
   isImageExportDpi,
   isImageExportFormat,
   isOcrLanguageValue,
+  withDefaultAppearance,
   withDefaultPreferences,
 } from "@/lib/preferences";
 
@@ -93,5 +98,71 @@ describe("getExportImagesHref", () => {
         imageExportDpi: 150,
       })
     ).toBe("/api/documents/doc-1/pdf/export-images?format=jpg");
+  });
+});
+
+describe("appearance preferences (F32)", () => {
+  it("fills defaults and rejects invalid values", () => {
+    expect(withDefaultAppearance({})).toEqual(DEFAULT_APPEARANCE);
+    const prefs = withDefaultAppearance({
+      theme: "dark",
+      locale: "xx-YY",
+      dateFormat: "mdy",
+      reduceMotion: true,
+      largerText: "yes",
+    });
+    expect(prefs.theme).toBe("dark");
+    expect(prefs.locale).toBe("en-GB");
+    expect(prefs.dateFormat).toBe("mdy");
+    expect(prefs.reduceMotion).toBe(true);
+    expect(prefs.largerText).toBe(false);
+  });
+
+  it("maps preferences to html classes", () => {
+    expect(appearanceHtmlClasses(DEFAULT_APPEARANCE)).toEqual([
+      "forma-theme-system",
+    ]);
+    expect(
+      appearanceHtmlClasses({
+        ...DEFAULT_APPEARANCE,
+        theme: "dark",
+        largerText: true,
+        highContrast: true,
+      })
+    ).toEqual(["forma-dark", "forma-larger-text", "forma-high-contrast"]);
+    expect(
+      appearanceHtmlClasses({ ...DEFAULT_APPEARANCE, theme: "light" })
+    ).toEqual([]);
+  });
+
+  it("formats numbers per the number-format preference", () => {
+    expect(
+      formatNumberWithPreference(1234567.5, { numberFormat: "comma-dot" })
+    ).toBe("1,234,567.5");
+    expect(
+      formatNumberWithPreference(1234567.5, { numberFormat: "dot-comma" })
+    ).toBe("1.234.567,5");
+    expect(
+      formatNumberWithPreference(1234.5, { numberFormat: "space-comma" })
+    ).toBe("1\u202f234,5");
+  });
+
+  it("formats dates per the locale + order preference", () => {
+    const date = new Date("2026-11-26T12:00:00Z");
+    expect(
+      formatDateWithPreference(date, { locale: "en-GB", dateFormat: "dmy" })
+    ).toBe("26 Nov 2026");
+    expect(
+      formatDateWithPreference(date, { locale: "en-US", dateFormat: "mdy" })
+    ).toBe("Nov 26, 2026");
+    expect(
+      formatDateWithPreference(date, { locale: "en-GB", dateFormat: "ymd" })
+    ).toBe("2026-11-26");
+    expect(
+      formatDateWithPreference("not-a-date", {
+        locale: "en-GB",
+        dateFormat: "dmy",
+      })
+    ).toBe("");
   });
 });

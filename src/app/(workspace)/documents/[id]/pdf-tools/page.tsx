@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PdfToolsClient } from "@/components/pdf-tools/pdf-tools-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -46,7 +47,7 @@ export default async function PdfToolsPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-tools page]", error);
+    logError("pdf-tools page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -89,7 +90,7 @@ export default async function PdfToolsPage({
       pageCount = await countPdfPages(new Uint8Array(await blob.arrayBuffer()));
     }
   } catch (error) {
-    console.error("[pdf-tools page] page count", error);
+    logError("pdf-tools page page count", error);
   }
 
   // Other PDFs in the same workspace, for merging.

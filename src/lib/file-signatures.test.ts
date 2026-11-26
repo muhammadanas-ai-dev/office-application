@@ -132,3 +132,27 @@ describe("validateFileSignature", () => {
     });
   });
 });
+
+describe("WEBP / TIFF signatures (F34)", () => {
+  const webp = new Uint8Array([
+    ...new TextEncoder().encode("RIFF"),
+    0x24, 0x00, 0x00, 0x00,
+    ...new TextEncoder().encode("WEBPVP8 "),
+  ]);
+  const tiffLe = new Uint8Array([0x49, 0x49, 0x2a, 0x00, 0x08, 0x00]);
+  const tiffBe = new Uint8Array([0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x08]);
+
+  it("detects webp and tiff", () => {
+    expect(detectFileType(webp)).toBe("webp");
+    expect(detectFileType(tiffLe)).toBe("tiff");
+    expect(detectFileType(tiffBe)).toBe("tiff");
+  });
+
+  it("validates the extensions against the bytes", () => {
+    expect(validateFileSignature(webp, "webp").ok).toBe(true);
+    expect(validateFileSignature(tiffLe, "tiff").ok).toBe(true);
+    expect(validateFileSignature(tiffBe, "tif").ok).toBe(true);
+    expect(validateFileSignature(webp, "png").ok).toBe(false);
+    expect(validateFileSignature(tiffLe, "webp").ok).toBe(false);
+  });
+});

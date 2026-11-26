@@ -21,6 +21,7 @@ import {
   saveFilledVersion,
 } from "@/lib/pdf-form-builder.server";
 import { PdfFormError } from "@/lib/pdf-form.server";
+import { logError } from "@/lib/log";
 
 const RemoveFieldBody = z.object({
   name: z
@@ -90,7 +91,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf remove-field]", error);
+    logError("pdf remove-field", error);
     return NextResponse.json(
       { error: "Could not remove this field." },
       { status: 500 }

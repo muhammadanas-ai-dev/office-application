@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DocumentNotesClient } from "@/components/notes/document-notes-client";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -44,7 +45,7 @@ export default async function DocumentNotesPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[notes page]", error);
+    logError("notes page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -68,6 +69,7 @@ export default async function DocumentNotesPage({
   return (
     <DocumentNotesClient
       document={{ id: document.id, title: document.title }}
+      userId={user.id}
     />
   );
 }

@@ -23,6 +23,7 @@ import {
   saveNewVersion,
 } from "@/lib/pdf-edit.server";
 import { MAX_REPLACEMENT_IMAGE_BYTES } from "@/lib/pdf-edit";
+import { logError } from "@/lib/log";
 
 const EditImageFields = z.object({
   page: z.coerce.number().int().min(1, "Page must be at least 1."),
@@ -112,7 +113,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf edit-image]", error);
+    logError("pdf edit-image", error);
     return NextResponse.json(
       { error: "Could not replace this image." },
       { status: 500 }

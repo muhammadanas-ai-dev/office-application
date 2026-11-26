@@ -19,6 +19,7 @@ import {
   splitPdf,
 } from "@/lib/pdf-tools.server";
 import { getPdfToolsFileName, parsePageRanges } from "@/lib/pdf-tools";
+import { logError } from "@/lib/log";
 
 const SplitBody = z.object({
   pages: z.string().min(1, "Enter at least one page.").max(200),
@@ -80,7 +81,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf split]", error);
+    logError("pdf split", error);
     return NextResponse.json(
       { error: "Could not extract these pages." },
       { status: 500 }

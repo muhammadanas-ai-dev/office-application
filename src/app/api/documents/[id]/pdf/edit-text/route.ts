@@ -23,6 +23,7 @@ import {
   saveNewVersion,
 } from "@/lib/pdf-edit.server";
 import { MAX_REPLACEMENT_CHARS } from "@/lib/pdf-edit";
+import { logError } from "@/lib/log";
 
 const EditTextBody = z.object({
   page: z.number().int().min(1, "Page must be at least 1."),
@@ -104,7 +105,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf edit-text]", error);
+    logError("pdf edit-text", error);
     return NextResponse.json(
       { error: "Could not edit this text." },
       { status: 500 }

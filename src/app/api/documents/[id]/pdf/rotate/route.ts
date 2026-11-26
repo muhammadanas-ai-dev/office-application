@@ -23,6 +23,7 @@ import {
   parseRotateSelection,
   parseRotationDegrees,
 } from "@/lib/pdf-tools";
+import { logError } from "@/lib/log";
 
 const RotateBody = z.object({
   pages: z.string().min(1, "Enter pages or 'all'.").max(200),
@@ -89,7 +90,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf rotate]", error);
+    logError("pdf rotate", error);
     return NextResponse.json(
       { error: "Could not rotate these pages." },
       { status: 500 }

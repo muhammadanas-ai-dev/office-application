@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VersionsClient } from "@/components/versions/versions-client";
 import { fetchDocumentVersions } from "@/lib/versions.server";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -46,7 +47,7 @@ export default async function VersionsPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[versions page]", error);
+    logError("versions page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -71,7 +72,7 @@ export default async function VersionsPage({
   try {
     versions = await fetchDocumentVersions(supabase, id);
   } catch (error) {
-    console.error("[versions page]", error);
+    logError("versions page", error);
     return (
       <EmptyState
         icon={FileWarning}

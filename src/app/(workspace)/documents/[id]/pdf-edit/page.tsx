@@ -17,6 +17,7 @@ import { PdfEditClient } from "@/components/pdf-edit/pdf-edit-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import { listPdfImages } from "@/lib/pdf-edit.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -49,7 +50,7 @@ export default async function PdfEditPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-edit page]", error);
+    logError("pdf-edit page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -95,7 +96,7 @@ export default async function PdfEditPage({
       images = await listPdfImages(bytes);
     }
   } catch (error) {
-    console.error("[pdf-edit page] file read", error);
+    logError("pdf-edit page file read", error);
   }
 
   return (

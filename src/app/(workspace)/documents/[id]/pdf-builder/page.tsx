@@ -25,6 +25,7 @@ import {
   type PdfFormField,
 } from "@/lib/pdf-form-builder.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -59,7 +60,7 @@ export default async function PdfFormBuilderPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-builder page]", error);
+    logError("pdf-builder page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -106,7 +107,7 @@ export default async function PdfFormBuilderPage({
       fields = await listPdfFormFields(bytes);
     }
   } catch (error) {
-    console.error("[pdf-builder page] file read", error);
+    logError("pdf-builder page file read", error);
     fieldsError =
       error instanceof Error ? error.message : "Could not read this PDF.";
   }

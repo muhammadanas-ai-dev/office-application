@@ -16,6 +16,7 @@ import {
   getToolsUser,
   listPdfFormFields,
 } from "@/lib/pdf-form.server";
+import { logError } from "@/lib/log";
 
 export async function GET(
   _request: Request,
@@ -40,7 +41,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[pdf form-fields]", error);
+    logError("pdf form-fields", error);
     return NextResponse.json(
       { error: "Could not list this PDF's form fields." },
       { status: 500 }

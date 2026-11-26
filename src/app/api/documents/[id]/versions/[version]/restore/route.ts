@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PdfEditError } from "@/lib/pdf-edit";
 import { restoreVersion } from "@/lib/versions.server";
+import { logError } from "@/lib/log";
 
 export async function POST(
   _request: Request,
@@ -47,7 +48,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[version restore]", error);
+    logError("version restore", error);
     return NextResponse.json(
       { error: "Could not restore this version." },
       { status: 500 }

@@ -13,11 +13,13 @@
 import {
   PDFDocument,
   PDFName,
+  PDFNumber,
   PDFRawStream,
   PDFRef,
   PDFStream,
   StandardFonts,
   decodePDFRawStream,
+  rgb,
   type PDFDict,
 } from "pdf-lib";
 import {
@@ -34,6 +36,12 @@ import {
   type PdfTextRun,
 } from "@/lib/pdf-content";
 import { MAX_PDF_PAGES, looksLikePdf } from "@/lib/pdf-tools";
+import {
+  estimateRunRect,
+  rectsIntersect,
+  type RedactRegion,
+} from "@/lib/pdf-redact";
+import type { PDFArray } from "pdf-lib";
 
 /** A PDF-edit failure with the HTTP status the route should return. */
 export class PdfEditError extends Error {
@@ -766,3 +774,214 @@ export async function assertEditablePdf(bytes: Uint8Array): Promise<number> {
 }
 
 export { decodeTextBytes };
+
+// ------------------------------------------------------------------
+// Redaction (F26)
+// ------------------------------------------------------------------
+
+export interface RedactResult {
+  bytes: Uint8Array;
+  /** Text runs removed (a run is removed whole when its
+   *  estimated box touches a region). */
+  removedTextRuns: number;
+  /** Image placements whose draw operation was removed. */
+  removedImages: number;
+  /** Annotations removed because their rect touched a
+   *  region (their contents could quote the redacted text). */
+  removedAnnotations: number;
+}
+
+/** Read an annotation dictionary's /Rect as a Rect, or null. */
+function readAnnotRect(dict: PDFDict): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} | null {
+  const raw = dict.lookup(PDFName.of("Rect")) as PDFArray | undefined;
+  if (!raw || raw.size() !== 4) return null;
+  const values: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const value = raw.lookup(i);
+    if (!(value instanceof PDFNumber)) return null;
+    values.push(value.asNumber());
+  }
+  const [x1, y1, x2, y2] = values;
+  return {
+    x: Math.min(x1, x2),
+    y: Math.min(y1, y2),
+    width: Math.abs(x2 - x1),
+    height: Math.abs(y2 - y1),
+  };
+}
+
+/**
+ * Permanently remove the content under the given regions:
+ * every text run whose estimated box intersects a region has
+ * its drawing operations deleted from the content stream;
+ * every image placement intersecting a region loses its Do
+ * operation; annotations whose rect intersects a region are
+ * removed; and a solid black rectangle is drawn over each
+ * region. The server wrapper then rebuilds the file with
+ * qpdf so image objects that are no longer drawn anywhere
+ * are dropped from the file entirely.
+ *
+ * Throws PdfEditError(400) when a region names a page the
+ * PDF does not have, or when nothing at all was removed and
+ * no box would change anything (a region on an empty area
+ * still draws its box, so this only fires for an empty
+ * region list, which validation already refuses).
+ */
+export async function redactInPdf(
+  bytes: Uint8Array,
+  regions: RedactRegion[]
+): Promise<RedactResult> {
+  const doc = await loadPdf(bytes, "This PDF");
+  const pageCount = doc.getPageCount();
+  for (const region of regions) {
+    if (region.page > pageCount) {
+      throw new PdfEditError(
+        400,
+        `This PDF has ${pageCount} page(s) — page ${region.page} does not exist.`
+      );
+    }
+  }
+  let removedTextRuns = 0;
+  let removedImages = 0;
+  let removedAnnotations = 0;
+
+  const pagesToEdit = [...new Set(regions.map((r) => r.page))];
+  for (const pageNumber of pagesToEdit) {
+    const pageRegions = regions.filter((r) => r.page === pageNumber);
+    const pageIndex = pageNumber - 1;
+    let content: string;
+    let ops;
+    try {
+      content = getPageContent(doc, pageIndex);
+      ops = parseOperations(tokenizeContent(content));
+    } catch (error) {
+      if (error instanceof PdfContentError) {
+        throw new PdfEditError(
+          400,
+          `Page ${pageNumber}'s content could not be read: ${error.message}`
+        );
+      }
+      throw error;
+    }
+    const fonts = getPageFonts(doc, pageIndex);
+    const runs = extractTextRuns(ops, fonts, pageIndex);
+    const placements = extractImagePlacements(ops);
+    // Only true image XObjects are removed — a Form XObject
+    // can contain a whole page section; it is covered by the
+    // black box but never deleted (the stated limit).
+    const pageNode = doc.getPage(pageIndex).node;
+    const resources = pageNode.Resources();
+    const xobjDict = resources
+      ? (doc.context.lookup(
+          resources.lookup(PDFName.of("XObject")) as PDFRef
+        ) as PDFDict | undefined)
+      : undefined;
+    const imageNames = new Set<string>();
+    if (xobjDict) {
+      for (const [nameObj, ref] of xobjDict.entries()) {
+        if (!(ref instanceof PDFRef)) continue;
+        const resolved = doc.context.lookup(ref) as
+          PDFDict | PDFStream | undefined;
+        if (!resolved) continue;
+        const obj: PDFDict | undefined =
+          resolved instanceof PDFStream
+            ? resolved.dict
+            : (resolved as PDFDict);
+        if (!obj || typeof obj.lookup !== "function") continue;
+        const subtype = obj.lookup(PDFName.of("Subtype"));
+        const subtypeName =
+          subtype &&
+          typeof (subtype as unknown as { decodeText?: () => string })
+            .decodeText === "function"
+            ? (subtype as unknown as { decodeText: () => string }).decodeText()
+            : String(subtype ?? "");
+        if (subtypeName.includes("Image")) {
+          imageNames.add(nameObj.decodeText());
+        }
+      }
+    }
+    const removeIndices = new Set<number>();
+    for (const run of runs) {
+      const rect = estimateRunRect(run);
+      if (pageRegions.some((region) => rectsIntersect(rect, region))) {
+        for (const idx of run.opIndices) removeIndices.add(idx);
+        removedTextRuns++;
+      }
+    }
+    const removedImageNames = new Set<string>();
+    for (const placement of placements) {
+      if (!imageNames.has(placement.name)) continue;
+      const rect = {
+        x: placement.x,
+        y: placement.y,
+        width: placement.width,
+        height: placement.height,
+      };
+      if (pageRegions.some((region) => rectsIntersect(rect, region))) {
+        removeIndices.add(placement.opIndex);
+        removedImageNames.add(placement.name);
+        removedImages++;
+      }
+    }
+    if (removeIndices.size > 0) {
+      setPageContent(doc, pageIndex, serializeOperations(ops, removeIndices));
+    }
+    // Drop the page's reference to a removed image when no
+    // remaining draw operation uses it, so the qpdf rebuild
+    // drops the image object (and its mask) from the file.
+    if (xobjDict && removedImageNames.size > 0) {
+      const stillUsed = new Set(
+        placements
+          .filter((p) => !removeIndices.has(p.opIndex))
+          .map((p) => p.name)
+      );
+      for (const name of removedImageNames) {
+        if (!stillUsed.has(name)) {
+          xobjDict.delete(PDFName.of(name));
+        }
+      }
+    }
+
+    // Annotations whose rect touches a region are removed —
+    // their text could quote what was redacted.
+    const page = doc.getPage(pageIndex);
+    const annots = page.node.Annots();
+    if (annots) {
+      for (let i = annots.size() - 1; i >= 0; i--) {
+        const dict = annots.lookup(i) as PDFDict | undefined;
+        if (!dict || typeof dict.lookup !== "function") continue;
+        const rect = readAnnotRect(dict);
+        if (
+          rect &&
+          pageRegions.some((region) => rectsIntersect(rect, region))
+        ) {
+          annots.remove(i);
+          removedAnnotations++;
+        }
+      }
+    }
+
+    // The visible black boxes, drawn last so they sit on top.
+    for (const region of pageRegions) {
+      page.drawRectangle({
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height,
+        color: rgb(0, 0, 0),
+      });
+    }
+  }
+
+  return {
+    bytes: await doc.save(),
+    removedTextRuns,
+    removedImages,
+    removedAnnotations,
+  };
+}

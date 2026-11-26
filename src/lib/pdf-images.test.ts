@@ -12,6 +12,7 @@ import {
   buildImagesPdf,
   fitImageInPage,
   getImageExportFileName,
+  getExtractImagesFileName,
   getImagesToPdfFileName,
   isImageExportDpi,
   isImageExportFormat,
@@ -53,6 +54,12 @@ describe("fitImageInPage", () => {
 describe("file names and format checks", () => {
   it("names the ZIP after the document", () => {
     expect(getImageExportFileName("Report.pdf")).toBe("Report-images.zip");
+    expect(getExtractImagesFileName("Report.pdf")).toBe(
+      "Report-extracted-images.zip"
+    );
+    expect(getExtractImagesFileName("")).toBe(
+      "document-extracted-images.zip"
+    );
     expect(getImageExportFileName("Report")).toBe("Report-images.zip");
   });
 

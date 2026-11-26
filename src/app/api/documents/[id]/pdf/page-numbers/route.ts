@@ -25,6 +25,7 @@ import {
 import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { PdfToolsError } from "@/lib/pdf-ops";
 import { addPageNumbersToPdf } from "@/lib/pdf-page-tools";
+import { logError } from "@/lib/log";
 
 const PageNumbersBody = z.object({
   position: z.enum([
@@ -93,7 +94,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf page-numbers]", error);
+    logError("pdf page-numbers", error);
     return NextResponse.json(
       { error: "Could not add the page numbers." },
       { status: 500 }

@@ -28,6 +28,7 @@ import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { PdfToolsError } from "@/lib/pdf-ops";
 import { OcrError } from "@/lib/ocr";
 import { embedOcrWordsInPdf } from "@/lib/pdf-searchable";
+import { logError } from "@/lib/log";
 
 export async function POST(
   request: Request,
@@ -90,7 +91,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf make-searchable]", error);
+    logError("pdf make-searchable", error);
     return NextResponse.json(
       { error: "Could not make this PDF searchable." },
       { status: 500 }

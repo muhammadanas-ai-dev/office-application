@@ -29,6 +29,7 @@ import {
   saveFilledVersion,
 } from "@/lib/pdf-form-builder.server";
 import { PdfFormError } from "@/lib/pdf-form.server";
+import { logError } from "@/lib/log";
 
 const AddFieldBody = z.object({
   name: z
@@ -133,7 +134,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf add-field]", error);
+    logError("pdf add-field", error);
     return NextResponse.json(
       { error: "Could not add this field." },
       { status: 500 }

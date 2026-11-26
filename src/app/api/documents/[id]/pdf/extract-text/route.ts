@@ -17,6 +17,7 @@ import {
 import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { PdfToolsError } from "@/lib/pdf-ops";
 import { extractPdfText } from "@/lib/pdf-searchable";
+import { logError } from "@/lib/log";
 
 export async function GET(
   request: Request,
@@ -51,7 +52,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[pdf extract-text]", error);
+    logError("pdf extract-text", error);
     return NextResponse.json(
       { error: "Could not extract this PDF's text." },
       { status: 500 }

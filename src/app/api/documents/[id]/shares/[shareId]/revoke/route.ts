@@ -10,6 +10,7 @@ import {
   getSharingUser,
   revokeShare,
 } from "@/lib/sharing.server";
+import { logError } from "@/lib/log";
 
 export async function POST(
   _request: Request,
@@ -28,7 +29,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[share revoke]", error);
+    logError("share revoke", error);
     return NextResponse.json(
       { error: "Something went wrong." },
       { status: 500 }

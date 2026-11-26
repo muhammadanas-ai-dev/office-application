@@ -25,7 +25,12 @@ export function FileTypeIcon({
   size?: number;
 }) {
   const type = getEditorDocumentType(mimeType);
-  if (mimeType === "image/png" || mimeType === "image/jpeg") {
+  if (
+    mimeType === "image/png" ||
+    mimeType === "image/jpeg" ||
+    mimeType === "image/webp" ||
+    mimeType === "image/tiff"
+  ) {
     return (
       <FileImage
         size={size}
@@ -84,6 +89,8 @@ export function fileTypeLabel(mimeType: string | null): string {
   const type = getEditorDocumentType(mimeType);
   if (mimeType === "image/png") return "PNG";
   if (mimeType === "image/jpeg") return "JPG";
+  if (mimeType === "image/webp") return "WEBP";
+  if (mimeType === "image/tiff") return "TIFF";
   if (type === "word") return "Word";
   if (type === "cell") return "Spreadsheet";
   if (type === "slide") return "Presentation";

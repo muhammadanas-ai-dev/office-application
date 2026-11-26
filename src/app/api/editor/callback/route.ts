@@ -27,6 +27,7 @@ import {
   deleteEditorSession,
   getEditorSession,
 } from "@/features/editor/config";
+import { logError } from "@/lib/log";
 
 const CALLBACK_OK = { error: 0 };
 const CALLBACK_FAILED = { error: 1 };
@@ -84,14 +85,14 @@ export async function POST(request: Request) {
   // the document server side: acknowledge, nothing to store.
   if (status === 1 || status === 4 || status === 6) {
     if (status === 6) {
-      console.error("[editor callback] document server save error", {
+      logError("editor callback", "document server save error", {
         key,
       });
     }
     return NextResponse.json(CALLBACK_OK);
   }
   if (status !== 2) {
-    console.error("[editor callback] unknown status", { key, status });
+    logError("editor callback", "unknown status", { key, status });
     return NextResponse.json(CALLBACK_OK);
   }
 
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
     .is("deleted_at", null)
     .maybeSingle();
   if (docError || !document) {
-    console.error("[editor callback]", docError);
+    logError("editor callback", docError);
     return NextResponse.json(CALLBACK_FAILED, { status: 500 });
   }
   if (document.workspace_id !== session.workspace_id) {
@@ -145,7 +146,7 @@ export async function POST(request: Request) {
     savedFileType &&
     savedFileType.toLowerCase() !== expectedFileType
   ) {
-    console.error("[editor callback] filetype mismatch", {
+    logError("editor callback", "filetype mismatch", {
       key,
       expected: expectedFileType,
       got: savedFileType,
@@ -162,11 +163,11 @@ export async function POST(request: Request) {
   try {
     saved = await fetch(fileUrl);
   } catch (error) {
-    console.error("[editor callback] download failed", error);
+    logError("editor callback download failed", error);
     return NextResponse.json(CALLBACK_FAILED, { status: 502 });
   }
   if (!saved.ok) {
-    console.error("[editor callback] download failed", saved.status);
+    logError("editor callback download failed", saved.status);
     return NextResponse.json(CALLBACK_FAILED, { status: 502 });
   }
   const bytes = new Uint8Array(await saved.arrayBuffer());
@@ -183,11 +184,11 @@ export async function POST(request: Request) {
   } else if (mimeType === "application/pdf") {
     const header = new TextDecoder().decode(bytes.slice(0, 5));
     if (header !== "%PDF-") {
-      console.error("[editor callback] saved file is not a PDF");
+      logError("editor callback", "saved file is not a PDF");
       return NextResponse.json(CALLBACK_FAILED, { status: 400 });
     }
   } else if (!looksLikeOfficeZip(bytes)) {
-    console.error("[editor callback] saved file is not an Office file", {
+    logError("editor callback", "saved file is not an Office file", {
       key,
       mimeType,
     });
@@ -212,7 +213,7 @@ export async function POST(request: Request) {
     if (uploadError.message.includes("already exists")) {
       return NextResponse.json(CALLBACK_OK);
     }
-    console.error("[editor callback]", uploadError);
+    logError("editor callback", uploadError);
     return NextResponse.json(CALLBACK_FAILED, { status: 500 });
   }
 
@@ -226,7 +227,7 @@ export async function POST(request: Request) {
     created_by: session.user_id,
   });
   if (versionError) {
-    console.error("[editor callback]", versionError);
+    logError("editor callback", versionError);
     await admin.storage.from("documents").remove([newPath]);
     return NextResponse.json(CALLBACK_FAILED, { status: 500 });
   }
@@ -242,7 +243,7 @@ export async function POST(request: Request) {
     .eq("id", document.id)
     .eq("version", document.version);
   if (updateError) {
-    console.error("[editor callback]", updateError);
+    logError("editor callback", updateError);
     return NextResponse.json(CALLBACK_FAILED, { status: 500 });
   }
 

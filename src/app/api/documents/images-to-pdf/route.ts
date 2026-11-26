@@ -19,6 +19,8 @@ import {
   MAX_IMAGES_TO_PDF,
   IMAGE_TO_PDF_MIME_TYPES,
 } from "@/lib/pdf-images";
+import { imageToPdfPages } from "@/lib/pdf-images.server";
+import { logError } from "@/lib/log";
 
 const ImagesToPdfBody = z.object({
   documentIds: z
@@ -131,10 +133,21 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
-      images.push({
-        bytes: new Uint8Array(await blob.arrayBuffer()),
-        mimeType: d.mime_type,
-      });
+      // WEBP/TIFF are decoded to PNG first (a multi-page
+      // TIFF contributes one page per TIFF page).
+      const pages = await imageToPdfPages(
+        new Uint8Array(await blob.arrayBuffer()),
+        d.mime_type
+      );
+      images.push(...pages);
+      if (images.length > MAX_IMAGES_TO_PDF) {
+        return NextResponse.json(
+          {
+            error: `These images make more than ${MAX_IMAGES_TO_PDF} pages — a multi-page TIFF counts once per page. Choose fewer images.`,
+          },
+          { status: 400 }
+        );
+      }
     }
     pdfBytes = await buildImagesPdf(images);
   } catch (error) {
@@ -144,7 +157,7 @@ export async function POST(request: Request) {
         { status: error.status }
       );
     }
-    console.error("[images-to-pdf] build", error);
+    logError("images-to-pdf build", error);
     return NextResponse.json(
       { error: "Could not build the PDF from these images." },
       { status: 500 }
@@ -166,7 +179,7 @@ export async function POST(request: Request) {
       upsert: false,
     });
   if (uploadError) {
-    console.error("[images-to-pdf] upload", uploadError);
+    logError("images-to-pdf upload", uploadError);
     return NextResponse.json(
       { error: "Could not save the PDF" },
       { status: 500 }
@@ -185,7 +198,7 @@ export async function POST(request: Request) {
   });
   if (insertError) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([filePath]);
-    console.error("[images-to-pdf] insert", insertError);
+    logError("images-to-pdf insert", insertError);
     return NextResponse.json(
       { error: "Could not save the PDF" },
       { status: 500 }
@@ -204,7 +217,7 @@ export async function POST(request: Request) {
     });
   if (versionError) {
     await supabase.storage.from(DOCUMENTS_BUCKET).remove([filePath]);
-    console.error("[images-to-pdf] version", versionError);
+    logError("images-to-pdf version", versionError);
     return NextResponse.json(
       { error: "Could not save the PDF" },
       { status: 500 }

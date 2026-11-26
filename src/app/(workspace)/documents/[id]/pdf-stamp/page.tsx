@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PdfStampClient } from "@/components/pdf-stamp/pdf-stamp-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -51,7 +52,7 @@ export default async function PdfStampPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-stamp page]", error);
+    logError("pdf-stamp page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -95,7 +96,7 @@ export default async function PdfStampPage({
       pageCount = await countPdfPages(bytes);
     }
   } catch (error) {
-    console.error("[pdf-stamp page] file read", error);
+    logError("pdf-stamp page file read", error);
   }
 
   return (

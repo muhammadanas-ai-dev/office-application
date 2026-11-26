@@ -36,12 +36,17 @@ export const ALLOWED_UPLOAD_TYPES: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
+  // F34: WEBP and TIFF images (converted to PNG by the
+  // images-to-PDF tool; OCR still takes PNG/JPEG).
+  webp: "image/webp",
+  tif: "image/tiff",
+  tiff: "image/tiff",
 };
 
 export const ALLOWED_UPLOAD_EXTENSIONS = Object.keys(ALLOWED_UPLOAD_TYPES);
 
 export const SUPPORTED_UPLOAD_MESSAGE =
-  "Supported uploads: DOCX, DOC, PDF, TXT, ODT, XLSX, XLS, CSV, ODS, PPTX, PPT, ODP, PNG, JPG — up to 50 MB each.";
+  "Supported uploads: DOCX, DOC, PDF, TXT, ODT, XLSX, XLS, CSV, ODS, PPTX, PPT, ODP, PNG, JPG, WEBP, TIFF — up to 50 MB each.";
 
 /** Keep file names safe inside a Storage path segment. */
 export function sanitizeFileName(name: string): string {

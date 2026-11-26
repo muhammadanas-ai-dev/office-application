@@ -23,6 +23,7 @@ import {
   pdfFormRateLimiter,
   saveFilledVersion,
 } from "@/lib/pdf-form.server";
+import { logError } from "@/lib/log";
 
 const FormValue = z.union([
   z.string().max(5000, "A field value is longer than 5,000 characters."),
@@ -97,7 +98,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf fill-form]", error);
+    logError("pdf fill-form", error);
     return NextResponse.json(
       { error: "Could not fill this form." },
       { status: 500 }

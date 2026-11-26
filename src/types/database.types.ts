@@ -33,6 +33,12 @@ export interface Database {
           display_name: string | null;
           avatar_path: string | null;
           locale: string;
+          theme: string;
+          date_format: string;
+          number_format: string;
+          reduce_motion: boolean;
+          larger_text: boolean;
+          high_contrast: boolean;
           ocr_language: string;
           image_export_format: string;
           image_export_dpi: number;
@@ -44,6 +50,12 @@ export interface Database {
           display_name?: string | null;
           avatar_path?: string | null;
           locale?: string;
+          theme?: string;
+          date_format?: string;
+          number_format?: string;
+          reduce_motion?: boolean;
+          larger_text?: boolean;
+          high_contrast?: boolean;
           ocr_language?: string;
           image_export_format?: string;
           image_export_dpi?: number;
@@ -55,6 +67,12 @@ export interface Database {
           display_name?: string | null;
           avatar_path?: string | null;
           locale?: string;
+          theme?: string;
+          date_format?: string;
+          number_format?: string;
+          reduce_motion?: boolean;
+          larger_text?: boolean;
+          high_contrast?: boolean;
           ocr_language?: string;
           image_export_format?: string;
           image_export_dpi?: number;
@@ -575,6 +593,42 @@ export interface Database {
           resolved?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_fonts: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          file_path: string;
+          format: string;
+          size_bytes: number;
+          is_favourite: boolean;
+          last_used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          file_path: string;
+          format: string;
+          size_bytes: number;
+          is_favourite?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          file_path?: string;
+          format?: string;
+          size_bytes?: number;
+          is_favourite?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

@@ -21,6 +21,7 @@ import {
   pdfToolsRateLimiter,
 } from "@/lib/pdf-tools.server";
 import { getPdfToolsFileName, parseCompressLevel } from "@/lib/pdf-tools";
+import { logError } from "@/lib/log";
 
 const CompressBody = z.object({
   level: z.string().optional(),
@@ -82,7 +83,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf compress]", error);
+    logError("pdf compress", error);
     return NextResponse.json(
       { error: "Could not compress this PDF." },
       { status: 500 }

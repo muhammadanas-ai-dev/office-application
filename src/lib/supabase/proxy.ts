@@ -15,7 +15,6 @@ const PROTECTED_PREFIXES = [
   "/templates",
   "/trash",
   "/settings",
-  "/plan",
   "/editor",
   // PDF tools pages live under /documents/[id]/pdf-tools. Without
   // this entry a signed-out visitor got a 200 with the workspace

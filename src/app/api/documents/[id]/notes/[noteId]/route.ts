@@ -15,6 +15,7 @@ import {
   getNotesUser,
   updateNote,
 } from "@/lib/document-notes.server";
+import { logError } from "@/lib/log";
 
 const PatchNoteBody = z.object({
   resolved: z.boolean().optional(),
@@ -28,7 +29,7 @@ function errorResponse(error: unknown): NextResponse {
       { status: error.status }
     );
   }
-  console.error("[notes]", error);
+  logError("notes", error);
   return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
 

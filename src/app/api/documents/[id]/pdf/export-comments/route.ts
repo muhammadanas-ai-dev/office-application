@@ -28,6 +28,7 @@ import {
   pdfAnnotateRateLimiter,
   saveAnnotatedVersion,
 } from "@/lib/pdf-annotate.server";
+import { logError } from "@/lib/log";
 
 const ExportCommentsBody = z.object({
   mode: z.literal("flattened"),
@@ -96,7 +97,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf export-comments]", error);
+    logError("pdf export-comments", error);
     return NextResponse.json(
       { error: "Could not export the comments." },
       { status: 500 }

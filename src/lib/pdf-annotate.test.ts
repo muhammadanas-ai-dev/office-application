@@ -12,6 +12,7 @@ import {
   flattenAnnotationsInPdf,
   listAnnotationsInPdf,
   removeAnnotationFromPdf,
+  importAnnotationsInPdf,
   AnnotateError,
   type AnnotationInput,
 } from "@/lib/pdf-annotate";
@@ -265,5 +266,48 @@ describe("appendCommentsSummaryInPdf", () => {
     // The input PDF is untouched.
     const originalDoc = await PDFDocument.load(bytes);
     expect(originalDoc.getPageCount()).toBe(1);
+  });
+});
+
+async function multiPagePdf(pages: number): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  for (let i = 0; i < pages; i++) {
+    const page = doc.addPage([612, 792]);
+    page.drawText(`Page ${i + 1}`, {
+      x: 50,
+      y: 650,
+      size: 14,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  }
+  return doc.save();
+}
+
+describe("importAnnotationsInPdf (F30)", () => {
+  it("copies annotations page-for-page and skips pages the target lacks", async () => {
+    const source = await addAnnotationsToPdf(await multiPagePdf(3), [
+      HIGHLIGHT,
+      { kind: "note", page: 3, x: 100, y: 600, contents: "Page 3 note" },
+    ]);
+    const result = await importAnnotationsInPdf(
+      await multiPagePdf(2),
+      source
+    );
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toBe(1);
+    const listed = await listAnnotationsInPdf(result.bytes);
+    expect(listed).toHaveLength(1);
+    expect(listed[0].contents).toBe("A test highlight");
+    expect(listed[0].page).toBe(1);
+    const doc = await PDFDocument.load(result.bytes);
+    expect(doc.getPageCount()).toBe(2);
+  });
+
+  it("refuses a source with no annotations", async () => {
+    await expect(
+      importAnnotationsInPdf(await multiPagePdf(1), await multiPagePdf(1))
+    ).rejects.toThrow(/no comments to import/);
   });
 });

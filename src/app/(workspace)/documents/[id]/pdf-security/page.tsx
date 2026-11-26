@@ -19,6 +19,7 @@ import { PdfSecurityClient } from "@/components/pdf-security/pdf-security-client
 import { getPdfSecurity } from "@/lib/pdf-security.server";
 import type { PdfSecurityInfo } from "@/lib/pdf-security";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -53,7 +54,7 @@ export default async function PdfSecurityPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-security page]", error);
+    logError("pdf-security page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -99,7 +100,7 @@ export default async function PdfSecurityPage({
       security = await getPdfSecurity(bytes);
     }
   } catch (error) {
-    console.error("[pdf-security page] security read", error);
+    logError("pdf-security page security read", error);
     securityError =
       error instanceof Error
         ? error.message

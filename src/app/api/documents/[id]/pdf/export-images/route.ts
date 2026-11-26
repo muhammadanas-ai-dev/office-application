@@ -25,6 +25,7 @@ import {
   isImageExportDpi,
   isImageExportFormat,
 } from "@/lib/pdf-images";
+import { logError } from "@/lib/log";
 
 export async function GET(
   request: Request,
@@ -103,7 +104,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[pdf export-images]", error);
+    logError("pdf export-images", error);
     return NextResponse.json(
       { error: "Could not export this PDF's pages as images." },
       { status: 500 }

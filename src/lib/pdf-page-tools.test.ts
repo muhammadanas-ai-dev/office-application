@@ -24,8 +24,12 @@ import {
   insertBlankPageInPdf,
   insertPagesFromImageInPdf,
   insertPagesFromPdf,
+  computeFitTransform,
+  insertImageOnPageInPdf,
+  resizePagesInPdf,
 } from "@/lib/pdf-page-tools";
 import { PdfEditError as EditError } from "@/lib/pdf-edit";
+import { listPdfImages } from "@/lib/pdf-edit";
 
 async function fixturePdf(pageTexts: string[]): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
@@ -655,5 +659,114 @@ describe("addShapeToPdf", () => {
         filled: true,
       })
     ).rejects.toThrow(EditError);
+  });
+});
+
+describe("page resize (F27)", () => {
+  it("fits a wide page into A4 portrait, centred", () => {
+    const fit = computeFitTransform(1000, 500, 595.28, 841.89);
+    expect(fit.scale).toBeCloseTo(0.59528);
+    expect(fit.width).toBeCloseTo(595.28);
+    expect(fit.x).toBeCloseTo(0);
+    expect(fit.y).toBeGreaterThan(0);
+  });
+
+  it("resizes all pages to Letter and keeps the text", async () => {
+    const bytes = await fixturePdf(["PDF One page 1", "PDF One page 2", "PDF One page 3"]);
+    const out = await resizePagesInPdf(bytes, {
+      pages: [],
+      target: { kind: "preset", preset: "letter" },
+    });
+    const doc = await PDFDocument.load(out);
+    expect(doc.getPageCount()).toBe(3);
+    for (const page of doc.getPages()) {
+      expect(page.getWidth()).toBeCloseTo(612, 0);
+      expect(page.getHeight()).toBeCloseTo(792, 0);
+    }
+    const texts = await pageTexts(out);
+    expect(texts[0]).toContain("PDF One page 1");
+    expect(texts[2]).toContain("PDF One page 3");
+  });
+
+  it("scales only the selected pages", async () => {
+    const bytes = await fixturePdf(["PDF One page 1", "PDF One page 2", "PDF One page 3"]);
+    const out = await resizePagesInPdf(bytes, {
+      pages: [2],
+      target: { kind: "scale", percent: 50 },
+    });
+    const doc = await PDFDocument.load(out);
+    const sizes = doc.getPages().map((p) => [p.getWidth(), p.getHeight()]);
+    // The fixture pages are 612x792 (Letter): page 2 halves.
+    expect(sizes[0][0]).toBeCloseTo(612, 0);
+    expect(sizes[1][0]).toBeCloseTo(306, 0);
+    expect(sizes[1][1]).toBeCloseTo(396, 0);
+    expect(sizes[2][0]).toBeCloseTo(612, 0);
+  });
+
+  it("refuses a scale outside 10–400% and a missing page", async () => {
+    const bytes = await fixturePdf(["PDF One page 1", "PDF One page 2", "PDF One page 3"]);
+    await expect(
+      resizePagesInPdf(bytes, {
+        pages: [],
+        target: { kind: "scale", percent: 5 },
+      })
+    ).rejects.toThrow(/between 10% and 400%/);
+    await expect(
+      resizePagesInPdf(bytes, {
+        pages: [9],
+        target: { kind: "preset", preset: "a4" },
+      })
+    ).rejects.toThrow(/page 9 does not exist/);
+  });
+});
+
+describe("insert image on a page (F38)", () => {
+  async function tinyPng(): Promise<Uint8Array> {
+    // A real 1x1 red PNG.
+    return new Uint8Array(
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+        "base64"
+      )
+    );
+  }
+
+  it("draws the image onto the page (an image XObject appears)", async () => {
+    const bytes = await fixturePdf(["Base page"]);
+    const out = await insertImageOnPageInPdf(
+      bytes,
+      { bytes: await tinyPng(), mimeType: "image/png" },
+      { page: 1, x: 50, y: 500, width: 100 }
+    );
+    const images = await listPdfImages(out);
+    expect(images.length).toBe(1);
+    const doc = await PDFDocument.load(out);
+    expect(doc.getPageCount()).toBe(1);
+  });
+
+  it("refuses an image that would overflow the page and a bad width", async () => {
+    const bytes = await fixturePdf(["Base page"]);
+    const png = await tinyPng();
+    await expect(
+      insertImageOnPageInPdf(
+        bytes,
+        { bytes: png, mimeType: "image/png" },
+        { page: 1, x: 580, y: 500, width: 100 }
+      )
+    ).rejects.toThrow(/fit fully inside the page/);
+    await expect(
+      insertImageOnPageInPdf(
+        bytes,
+        { bytes: png, mimeType: "image/png" },
+        { page: 1, x: 50, y: 500, width: 5 }
+      )
+    ).rejects.toThrow(/width must be between/);
+    await expect(
+      insertImageOnPageInPdf(
+        bytes,
+        { bytes: png, mimeType: "image/gif" },
+        { page: 1, x: 50, y: 500, width: 100 }
+      )
+    ).rejects.toThrow(/Only PNG and JPEG/);
   });
 });

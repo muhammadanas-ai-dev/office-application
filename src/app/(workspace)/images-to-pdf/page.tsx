@@ -1,6 +1,6 @@
 // Images to PDF page (Day 22).
 //
-// Lists the user's PNG/JPEG images (from the library, RLS) with
+// Lists the user's PNG/JPEG/WEBP/TIFF images (from the library, RLS) with
 // checkboxes, in library order. Choosing images and a title and
 // clicking "Create PDF" calls POST /api/documents/images-to-pdf,
 // which creates a NEW PDF document in the library (one page per
@@ -11,6 +11,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ImagesToPdfClient } from "@/components/images-to-pdf/images-to-pdf-client";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -33,12 +34,12 @@ export default async function ImagesToPdfPage() {
   const { data: images, error } = await supabase
     .from("documents")
     .select("id, title, mime_type, version")
-    .in("mime_type", ["image/png", "image/jpeg"])
+    .in("mime_type", ["image/png", "image/jpeg", "image/webp", "image/tiff"])
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) {
-    console.error("[images-to-pdf page]", error);
+    logError("images-to-pdf page", error);
     return (
       <EmptyState
         icon={FileWarning}

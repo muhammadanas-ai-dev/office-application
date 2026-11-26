@@ -15,6 +15,7 @@ import {
   listShares,
   parseShareExpiry,
 } from "@/lib/sharing.server";
+import { logError } from "@/lib/log";
 
 function errorResponse(error: unknown): NextResponse {
   if (error instanceof PdfEditError) {
@@ -23,7 +24,7 @@ function errorResponse(error: unknown): NextResponse {
       { status: error.status }
     );
   }
-  console.error("[shares]", error);
+  logError("shares", error);
   return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
 

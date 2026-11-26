@@ -13,6 +13,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDraftAutosave } from "@/components/drafts/use-draft-autosave";
+import { draftStorageKey } from "@/lib/draft-autosave";
 import { useRouter } from "next/navigation";
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 import type { PageViewport } from "pdfjs-dist/types/src/display/display_utils";
@@ -21,6 +23,9 @@ import Link from "next/link";
 interface PdfDrawClientProps {
   document: { id: string; title: string; version: number };
   pageCount: number | null;
+  userFonts?: { id: string; name: string; isFavourite: boolean }[];
+  userId: string;
+  images?: { id: string; title: string }[];
 }
 
 const sectionClass = "rounded-xl border border-[#dce3ec] bg-white p-4";
@@ -38,7 +43,7 @@ const labelClass = "mb-1 block text-xs font-medium text-[#202b3c]";
 
 const SCALE = 1.5;
 
-type Mode = "crop" | "link" | "text" | "shape";
+type Mode = "crop" | "link" | "text" | "shape" | "image";
 type ShapeKind = "rectangle" | "ellipse" | "line";
 type DrawColor = "black" | "grey" | "red" | "green" | "blue";
 type DrawFont = "helvetica" | "times" | "courier";
@@ -67,7 +72,7 @@ const COLOR_HEX: Record<DrawColor, string> = {
   blue: "#0000ff",
 };
 
-export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
+export function PdfDrawClient({ document, pageCount, userFonts = [], userId, images = [] }: PdfDrawClientProps) {
   const router = useRouter();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +91,12 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
   const [textPoint, setTextPoint] = useState<{ x: number; y: number } | null>(
     null
   );
+  // The click point + form for image mode (F38).
+  const [imagePoint, setImagePoint] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [imageId, setImageId] = useState("");
+  const [imageWidth, setImageWidth] = useState("200");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,8 +111,17 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
   const [linkUrl, setLinkUrl] = useState("");
   // Text form.
   const [textInput, setTextInput] = useState("");
+  // Draft auto-save (F35) for the Add-text box.
+  const {
+    restoredAt: textRestoredAt,
+    clear: clearTextDraft,
+  } = useDraftAutosave({
+    storageKey: draftStorageKey(userId, document.id, "draw-text"),
+    value: textInput,
+    onRestore: setTextInput,
+  });
   const [textSize, setTextSize] = useState("14");
-  const [textFont, setTextFont] = useState<DrawFont>("helvetica");
+  const [textFont, setTextFont] = useState<string>("helvetica");
   const [textColor, setTextColor] = useState<DrawColor>("black");
   // Shape form.
   const [shapeKind, setShapeKind] = useState<ShapeKind>("rectangle");
@@ -185,6 +205,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
     setLiveDrag(null);
     setDragRect(null);
     setTextPoint(null);
+    setImagePoint(null);
     dragging.current = false;
   }
 
@@ -194,6 +215,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
     setLiveDrag(null);
     setDragRect(null);
     setTextPoint(null);
+    setImagePoint(null);
     dragging.current = false;
   }
 
@@ -221,7 +243,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
 
   // Dragging a rectangle (crop / link / shape modes).
   function handleDragDown(event: React.PointerEvent) {
-    if (mode === "text") return;
+    if (mode === "text" || mode === "image") return;
     const point = pointerToPdf(event);
     if (!point) return;
     dragging.current = true;
@@ -231,7 +253,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
   }
 
   function handleDragMove(event: React.PointerEvent) {
-    if (mode === "text" || !dragging.current) return;
+    if (mode === "text" || mode === "image" || !dragging.current) return;
     const point = pointerToPdf(event);
     if (!point) return;
     setLiveDrag((drag) =>
@@ -240,7 +262,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
   }
 
   function handleDragUp() {
-    if (mode === "text" || !dragging.current) return;
+    if (mode === "text" || mode === "image" || !dragging.current) return;
     dragging.current = false;
     setLiveDrag((drag) => {
       if (drag && (drag.x1 !== drag.x2 || drag.y1 !== drag.y2)) {
@@ -250,19 +272,25 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
     });
   }
 
-  // A click in "Text" mode places the text at that point.
+  // A click in "Text" mode places the text at that point;
+  // in "Image" mode it places the image's bottom-left corner.
   function handlePageClick(event: React.MouseEvent) {
-    if (mode !== "text") return;
+    if (mode !== "text" && mode !== "image") return;
     const point = pointerToPdf(event as unknown as React.PointerEvent);
     if (!point) return;
-    setTextPoint({ x: point[0], y: point[1] });
+    if (mode === "text") {
+      setTextPoint({ x: point[0], y: point[1] });
+    } else {
+      setImagePoint({ x: point[0], y: point[1] });
+    }
     setDragRect(null);
   }
 
   async function postDraw(
     url: string,
     body: Record<string, unknown>,
-    successMessage: string
+    successMessage: string,
+    onSuccess?: () => void
   ) {
     setBusy(true);
     setError(null);
@@ -289,6 +317,7 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
       );
       setDragRect(null);
       setTextPoint(null);
+      onSuccess?.();
       reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "This operation failed.");
@@ -399,6 +428,13 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
           >
             Shape
           </button>
+          <button
+            type="button"
+            onClick={() => switchMode("image")}
+            className={toolButtonClass(mode === "image")}
+          >
+            Insert image
+          </button>
           <span className="ml-auto text-sm text-[#667389]">
             Page {currentPage} of {totalPages}
           </span>
@@ -426,9 +462,80 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
               ? "Drag a rectangle over the clickable area, then enter the web address."
               : mode === "text"
                 ? "Click where the text should start, then write it."
-                : "Drag a rectangle for the shape, then choose the shape and colour."}
+                : mode === "image"
+                  ? "Click where the image's bottom-left corner should go, then choose the image and its width."
+                  : "Drag a rectangle for the shape, then choose the shape and colour."}
         </p>
       </div>
+
+      {mode === "image" && imagePoint ? (
+        <div className={`${sectionClass} mt-4`}>
+          <p className="text-sm">
+            Insert an image at ({Math.round(imagePoint.x)},{" "}
+            {Math.round(imagePoint.y)}) on page {currentPage} — the point is
+            the image&apos;s bottom-left corner, and the height follows the
+            image&apos;s shape. The image must fit fully on the page.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Image to insert"
+              value={imageId}
+              onChange={(e) => setImageId(e.target.value)}
+              className={`${inputClass} max-w-xs`}
+            >
+              <option value="">Choose an image…</option>
+              {images.map((image) => (
+                <option key={image.id} value={image.id}>
+                  {image.title}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-1 text-sm text-[#667389]">
+              Width (pt)
+              <input
+                type="number"
+                min={10}
+                value={imageWidth}
+                onChange={(e) => setImageWidth(e.target.value)}
+                className={`${inputClass} w-20`}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busy || !imageId}
+              onClick={() =>
+                postDraw(
+                  `/api/documents/${document.id}/pdf/insert-image`,
+                  {
+                    imageDocumentId: imageId,
+                    page: currentPage,
+                    x: imagePoint.x,
+                    y: imagePoint.y,
+                    width: Number(imageWidth),
+                  },
+                  "Image inserted"
+                )
+              }
+              className={buttonClass}
+            >
+              Insert image
+            </button>
+            <button
+              type="button"
+              onClick={() => setImagePoint(null)}
+              className="text-sm text-neutral-500 hover:underline"
+            >
+              Clear point
+            </button>
+          </div>
+          {images.length === 0 ? (
+            <p className="mt-2 text-xs text-[#667389]">
+              No images in this workspace yet — upload a PNG, JPEG, WEBP or
+              TIFF to the library first.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {mode === "crop" && dragRect ? (
         <div className={`${sectionClass} mt-4`}>
@@ -533,6 +640,12 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
                 placeholder="Write the text…"
                 className={inputClass}
               />
+              {textRestoredAt ? (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Draft restored from{" "}
+                  {new Date(textRestoredAt).toLocaleString("en-GB")}.
+                </p>
+              ) : null}
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -542,12 +655,22 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
                 <select
                   id="draw-text-font"
                   value={textFont}
-                  onChange={(e) => setTextFont(e.target.value as DrawFont)}
+                  onChange={(e) => setTextFont(e.target.value)}
                   className={inputClass}
                 >
                   <option value="helvetica">Helvetica</option>
                   <option value="times">Times</option>
                   <option value="courier">Courier</option>
+                  {userFonts.length > 0 ? (
+                    <optgroup label="Your fonts">
+                      {userFonts.map((font) => (
+                        <option key={font.id} value={`custom:${font.id}`}>
+                          {font.isFavourite ? "★ " : ""}
+                          {font.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
                 </select>
               </div>
               <div className="flex-1">
@@ -594,10 +717,16 @@ export function PdfDrawClient({ document, pageCount }: PdfDrawClientProps) {
                       y: textPoint.y,
                       text: textInput.trim(),
                       size: Number(textSize),
-                      font: textFont,
+                      font: textFont.startsWith("custom:")
+                        ? "custom"
+                        : textFont,
+                      fontId: textFont.startsWith("custom:")
+                        ? textFont.slice("custom:".length)
+                        : undefined,
                       color: textColor,
                     },
-                    "Text added"
+                    "Text added",
+                    clearTextDraft
                   )
                 }
                 className={buttonClass}

@@ -25,6 +25,7 @@ import {
   isOcrLanguage,
   ocrRateLimiter,
 } from "@/lib/ocr.server";
+import { logError } from "@/lib/log";
 
 const OcrBody = z.object({
   language: z
@@ -92,7 +93,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[ocr]", error);
+    logError("ocr", error);
     return NextResponse.json(
       { error: "Could not start OCR for this document." },
       { status: 500 }
@@ -133,7 +134,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[ocr]", error);
+    logError("ocr", error);
     return NextResponse.json(
       { error: "Could not load this document's OCR status." },
       { status: 500 }

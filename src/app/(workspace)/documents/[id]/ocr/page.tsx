@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OcrClient } from "@/components/ocr/ocr-client";
 import { isOcrAcceptedMimeType } from "@/lib/ocr.server";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -49,7 +50,7 @@ export default async function OcrPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[ocr page]", error);
+    logError("ocr page", error);
     return (
       <EmptyState
         icon={FileWarning}

@@ -135,10 +135,29 @@ function isPlainText(bytes: Uint8Array): boolean {
  *  Returns the extension the bytes match, or null when the
  *  bytes match no known format. (ZIP-based formats all return
  *  "zip" here — the inner marker is what distinguishes them.) */
+function isWebp(bytes: Uint8Array): boolean {
+  // RIFF container with the WEBP form type at offset 8.
+  return (
+    bytes.length >= 12 &&
+    String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) === "RIFF" &&
+    String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]) === "WEBP"
+  );
+}
+
+function isTiff(bytes: Uint8Array): boolean {
+  // Little-endian II*\0 or big-endian MM\0*.
+  return (
+    startsWith(bytes, [0x49, 0x49, 0x2a, 0x00]) ||
+    startsWith(bytes, [0x4d, 0x4d, 0x00, 0x2a])
+  );
+}
+
 export function detectFileType(bytes: Uint8Array): string | null {
   if (startsWith(bytes, PDF_MAGIC)) return "pdf";
   if (startsWith(bytes, PNG_MAGIC)) return "png";
   if (startsWith(bytes, JPEG_MAGIC)) return "jpg";
+  if (isWebp(bytes)) return "webp";
+  if (isTiff(bytes)) return "tiff";
   if (startsWith(bytes, OLE_MAGIC)) return "ole";
   if (startsWith(bytes, ZIP_MAGIC)) return "zip";
   if (isPlainText(bytes)) return "txt";
@@ -184,6 +203,11 @@ export function validateFileSignature(
     case "jpg":
     case "jpeg":
       return startsWith(bytes, JPEG_MAGIC) ? { ok: true } : mismatch("jpg");
+    case "webp":
+      return isWebp(bytes) ? { ok: true } : mismatch("webp");
+    case "tif":
+    case "tiff":
+      return isTiff(bytes) ? { ok: true } : mismatch("tiff");
     case "doc":
     case "xls":
     case "ppt":

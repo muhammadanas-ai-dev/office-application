@@ -6,6 +6,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  pageLabel,
+  type PageLabelRange,
+  type PageLabelStyle,
+} from "@/lib/page-label-render";
 import Link from "next/link";
 
 interface PdfToolsClientProps {
@@ -209,6 +214,28 @@ export function PdfToolsClient({
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState(false);
 
+  // Resize pages (F27).
+  const [resizeMode, setResizeMode] = useState<"preset" | "scale">("preset");
+  const [resizePreset, setResizePreset] = useState("a4");
+  const [resizePercent, setResizePercent] = useState("150");
+  const [resizePages, setResizePages] = useState("");
+  const [resizeError, setResizeError] = useState<string | null>(null);
+  const [resizeSuccess, setResizeSuccess] = useState<string | null>(null);
+  const [resizeBusy, setResizeBusy] = useState(false);
+
+  // Page labels (F37).
+  const [labelRanges, setLabelRanges] = useState<
+    { fromPage: string; style: PageLabelStyle; prefix: string; start: string }[]
+  >([{ fromPage: "1", style: "decimal", prefix: "", start: "1" }]);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const [labelSuccess, setLabelSuccess] = useState<string | null>(null);
+  const [labelBusy, setLabelBusy] = useState(false);
+
+  // Repair PDF (F36).
+  const [repairError, setRepairError] = useState<string | null>(null);
+  const [repairSuccess, setRepairSuccess] = useState<string | null>(null);
+  const [repairBusy, setRepairBusy] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/documents/${document.id}/pdf/annotations`)
@@ -243,6 +270,123 @@ export function PdfToolsClient({
       setExportError(error instanceof Error ? error.message : "Export failed.");
     } finally {
       setExportBusy(false);
+    }
+  }
+
+  async function onResizePages(event: React.FormEvent) {
+    event.preventDefault();
+    setResizeError(null);
+    setResizeSuccess(null);
+    setResizeBusy(true);
+    try {
+      const pages = resizePages
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map((n) => Number(n));
+      const target =
+        resizeMode === "preset"
+          ? { kind: "preset" as const, preset: resizePreset }
+          : { kind: "scale" as const, percent: Number(resizePercent) };
+      const { version } = await runVersionTool(
+        `/api/documents/${document.id}/pdf/resize-pages`,
+        { pages, target }
+      );
+      setResizeSuccess(
+        `Pages resized — saved as version ${version}. The original file is untouched.`
+      );
+    } catch (error) {
+      setResizeError(
+        error instanceof Error ? error.message : "Resize failed."
+      );
+    } finally {
+      setResizeBusy(false);
+    }
+  }
+
+  function parsedLabelRanges(): PageLabelRange[] {
+    return labelRanges.map((range) => ({
+      fromPage: Number(range.fromPage),
+      style: range.style,
+      prefix: range.prefix,
+      start: Number(range.start) || 1,
+    }));
+  }
+
+  async function onPageLabels(event: React.FormEvent) {
+    event.preventDefault();
+    setLabelError(null);
+    setLabelSuccess(null);
+    setLabelBusy(true);
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/pdf/page-labels`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ranges: parsedLabelRanges() }),
+        }
+      );
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        version?: number;
+      } | null;
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Could not set the page labels.");
+      }
+      setLabelSuccess(
+        `Page labels saved as version ${data?.version}. Readers will show these numbers for the pages. The original file is untouched.`
+      );
+    } catch (error) {
+      setLabelError(
+        error instanceof Error ? error.message : "Could not set the labels."
+      );
+    } finally {
+      setLabelBusy(false);
+    }
+  }
+
+  async function onRepair(event: React.FormEvent) {
+    event.preventDefault();
+    setRepairError(null);
+    setRepairSuccess(null);
+    setRepairBusy(true);
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/pdf/repair`,
+        { method: "POST" }
+      );
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+        repaired?: boolean;
+        message?: string;
+        version?: number;
+        hadProblems?: boolean;
+        warnings?: string[];
+      } | null;
+      if (!response.ok) {
+        throw new Error(data?.error ?? "Repair failed.");
+      }
+      if (data?.repaired === false) {
+        setRepairSuccess(
+          data.message ?? "This PDF is healthy — nothing to repair."
+        );
+      } else {
+        setRepairSuccess(
+          `Repaired — saved as version ${data?.version}.` +
+            (data?.hadProblems
+              ? " qpdf found and fixed problems in the file structure."
+              : " The file was rebuilt cleanly.") +
+            (data?.warnings?.length
+              ? ` Notes: ${data.warnings.slice(0, 3).join(" ")}`
+              : "")
+        );
+      }
+    } catch (error) {
+      setRepairError(
+        error instanceof Error ? error.message : "Repair failed."
+      );
+    } finally {
+      setRepairBusy(false);
     }
   }
 
@@ -831,6 +975,244 @@ export function PdfToolsClient({
             {exportBusy ? "Exporting…" : "Export with comments"}
           </button>
           <ToolMessage error={exportError} success={exportSuccess} />
+        </form>
+      </section>
+
+      <section className={sectionClass} aria-labelledby="resize-heading">
+        <h2
+          id="resize-heading"
+          className="text-sm font-semibold text-[#202b3c]"
+        >
+          Resize pages
+        </h2>
+        <p className="mt-1 text-xs text-[#667389]">
+          Rebuild pages at a standard size (the content is fitted and centred,
+          keeping its proportions) or scale them by a percentage. Pages you do
+          not select are copied unchanged. Resized pages are rebuilt, so
+          annotations on them do not carry over. Saved as a new version — the
+          original file is untouched.
+        </p>
+        <form onSubmit={onResizePages} className="mt-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Resize mode"
+              value={resizeMode}
+              onChange={(event) =>
+                setResizeMode(event.target.value as "preset" | "scale")
+              }
+              className={inputClass}
+            >
+              <option value="preset">Standard size</option>
+              <option value="scale">Scale by percent</option>
+            </select>
+            {resizeMode === "preset" ? (
+              <select
+                aria-label="Page size"
+                value={resizePreset}
+                onChange={(event) => setResizePreset(event.target.value)}
+                className={inputClass}
+              >
+                <option value="a4">A4</option>
+                <option value="letter">Letter</option>
+                <option value="a5">A5</option>
+                <option value="legal">Legal</option>
+              </select>
+            ) : (
+              <label className="flex items-center gap-1 text-xs text-[#667389]">
+                <input
+                  aria-label="Scale percent"
+                  type="number"
+                  min={10}
+                  max={400}
+                  value={resizePercent}
+                  onChange={(event) => setResizePercent(event.target.value)}
+                  className={`${inputClass} w-20`}
+                />
+                %
+              </label>
+            )}
+            <input
+              aria-label="Pages to resize (blank means all)"
+              value={resizePages}
+              onChange={(event) => setResizePages(event.target.value)}
+              placeholder="Pages, e.g. 1, 3 (blank = all)"
+              className={`${inputClass} w-52`}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={resizeBusy}
+            className={buttonClass}
+          >
+            {resizeBusy ? "Resizing…" : "Resize pages"}
+          </button>
+          <ToolMessage error={resizeError} success={resizeSuccess} />
+        </form>
+      </section>
+
+      <section className={sectionClass} aria-labelledby="labels-heading">
+        <h2
+          id="labels-heading"
+          className="text-sm font-semibold text-[#202b3c]"
+        >
+          Page labels
+        </h2>
+        <p className="mt-1 text-xs text-[#667389]">
+          The numbers readers show for pages — i, ii, iii for front matter,
+          then 1, 2, 3 for the body, or A-1, A-2 for an appendix. Each range
+          starts at a page; the first range must start at page 1. Saved as
+          a new version.
+        </p>
+        <form onSubmit={onPageLabels} className="mt-3 space-y-2">
+          {labelRanges.map((range, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1 text-xs text-[#667389]">
+                From page
+                <input
+                  type="number"
+                  min={1}
+                  value={range.fromPage}
+                  onChange={(event) =>
+                    setLabelRanges((current) =>
+                      current.map((r, i) =>
+                        i === index
+                          ? { ...r, fromPage: event.target.value }
+                          : r
+                      )
+                    )
+                  }
+                  className={`${inputClass} w-16`}
+                />
+              </label>
+              <select
+                aria-label={`Range ${index + 1} style`}
+                value={range.style}
+                onChange={(event) =>
+                  setLabelRanges((current) =>
+                    current.map((r, i) =>
+                      i === index
+                        ? {
+                            ...r,
+                            style: event.target.value as PageLabelStyle,
+                          }
+                        : r
+                    )
+                  )
+                }
+                className={inputClass}
+              >
+                <option value="decimal">1, 2, 3</option>
+                <option value="roman-lower">i, ii, iii</option>
+                <option value="roman-upper">I, II, III</option>
+                <option value="letters-upper">A, B, C</option>
+                <option value="letters-lower">a, b, c</option>
+                <option value="none">No number (prefix only)</option>
+              </select>
+              <input
+                aria-label={`Range ${index + 1} prefix`}
+                value={range.prefix}
+                onChange={(event) =>
+                  setLabelRanges((current) =>
+                    current.map((r, i) =>
+                      i === index ? { ...r, prefix: event.target.value } : r
+                    )
+                  )
+                }
+                placeholder="Prefix"
+                maxLength={32}
+                className={`${inputClass} w-20`}
+              />
+              <label className="flex items-center gap-1 text-xs text-[#667389]">
+                Starts at
+                <input
+                  type="number"
+                  min={1}
+                  value={range.start}
+                  onChange={(event) =>
+                    setLabelRanges((current) =>
+                      current.map((r, i) =>
+                        i === index
+                          ? { ...r, start: event.target.value }
+                          : r
+                      )
+                    )
+                  }
+                  className={`${inputClass} w-16`}
+                />
+              </label>
+              {labelRanges.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLabelRanges((current) =>
+                      current.filter((_, i) => i !== index)
+                    )
+                  }
+                  className="text-xs text-red-700 hover:underline"
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setLabelRanges((current) => [
+                  ...current,
+                  { fromPage: "", style: "decimal", prefix: "", start: "1" },
+                ])
+              }
+              className="text-xs text-[#3159c9] hover:underline"
+            >
+              Add a range
+            </button>
+          </div>
+          {pageCount ? (
+            <p className="text-xs text-[#667389]">
+              Preview:{" "}
+              {Array.from(
+                { length: Math.min(pageCount, 12) },
+                (_, i) => pageLabel(parsedLabelRanges(), i + 1)
+              ).join(", ")}
+              {pageCount > 12 ? ", …" : ""}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={labelBusy}
+            className={buttonClass}
+          >
+            {labelBusy ? "Saving…" : "Set page labels"}
+          </button>
+          <ToolMessage error={labelError} success={labelSuccess} />
+        </form>
+      </section>
+
+      <section className={sectionClass} aria-labelledby="repair-heading">
+        <h2
+          id="repair-heading"
+          className="text-sm font-semibold text-[#202b3c]"
+        >
+          Repair PDF
+        </h2>
+        <p className="mt-1 text-xs text-[#667389]">
+          Rebuild this PDF&apos;s internal structure with qpdf — it fixes
+          broken cross-reference tables, bad offsets and damaged object
+          streams, the usual reasons a PDF refuses to open somewhere. If
+          the file is already healthy and the rebuild changes nothing, no
+          new version is saved.
+        </p>
+        <form onSubmit={onRepair} className="mt-3 space-y-2">
+          <button
+            type="submit"
+            disabled={repairBusy}
+            className={buttonClass}
+          >
+            {repairBusy ? "Checking…" : "Check and repair"}
+          </button>
+          <ToolMessage error={repairError} success={repairSuccess} />
         </form>
       </section>
     </div>

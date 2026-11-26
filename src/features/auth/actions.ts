@@ -19,6 +19,7 @@ import {
   signInSchema,
   signUpSchema,
   updatePasswordSchema,
+  updateAppearanceSchema,
   updatePreferencesSchema,
   updateProfileSchema,
 } from "@/features/auth/schemas";
@@ -303,4 +304,56 @@ export async function updatePreferences(
 
   revalidatePath("/settings");
   return { ok: true, message: "Preferences saved." };
+}
+
+export async function updateAppearance(
+  _prevState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const parsed = updateAppearanceSchema.safeParse({
+    theme: formString(formData, "theme"),
+    locale: formString(formData, "locale"),
+    dateFormat: formString(formData, "dateFormat"),
+    numberFormat: formString(formData, "numberFormat"),
+    reduceMotion: formData.get("reduceMotion") === "on",
+    largerText: formData.get("largerText") === "on",
+    highContrast: formData.get("highContrast") === "on",
+  });
+  if (!parsed.success) return validationError(parsed.error.issues);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Your session expired. Sign in again." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      theme: parsed.data.theme,
+      locale: parsed.data.locale,
+      date_format: parsed.data.dateFormat,
+      number_format: parsed.data.numberFormat,
+      reduce_motion: parsed.data.reduceMotion,
+      larger_text: parsed.data.largerText,
+      high_contrast: parsed.data.highContrast,
+    })
+    .eq("id", user.id);
+  if (error) {
+    logError("auth.updateAppearance", error.message);
+    if (error.code === "PGRST204" || error.code === "42703") {
+      return {
+        ok: false,
+        error:
+          "Appearance settings are not set up yet — they arrive with the combined SQL file (forma-checklist-completion-migrations.sql) in the Supabase Dashboard SQL Editor.",
+      };
+    }
+    return { ok: false, error: "Could not save your settings. Try again." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Appearance saved — it applies right away." };
 }

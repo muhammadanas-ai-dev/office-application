@@ -27,6 +27,7 @@ import {
   removeAnnotationFromPdf,
   saveAnnotatedVersion,
 } from "@/lib/pdf-annotate.server";
+import { logError } from "@/lib/log";
 
 const AnnotationInputBody = z.object({
   kind: z.enum(["highlight", "underline", "strikeout", "note", "ink"]),
@@ -68,7 +69,7 @@ export async function GET(
         { status: error.status }
       );
     }
-    console.error("[pdf annotations]", error);
+    logError("pdf annotations", error);
     return NextResponse.json(
       { error: "Could not list this PDF's annotations." },
       { status: 500 }
@@ -131,7 +132,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf annotations]", error);
+    logError("pdf annotations", error);
     return NextResponse.json(
       { error: "Could not add the annotations." },
       { status: 500 }
@@ -203,7 +204,7 @@ export async function DELETE(
         { status: error.status }
       );
     }
-    console.error("[pdf annotations]", error);
+    logError("pdf annotations", error);
     return NextResponse.json(
       { error: "Could not remove the annotation." },
       { status: 500 }

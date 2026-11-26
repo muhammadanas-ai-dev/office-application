@@ -23,6 +23,7 @@ import {
 import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { PdfToolsError } from "@/lib/pdf-ops";
 import { addLinkToPdf } from "@/lib/pdf-page-tools";
+import { logError } from "@/lib/log";
 
 const DragRectBody = z.object({
   x1: z.number().finite(),
@@ -92,7 +93,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf links]", error);
+    logError("pdf links", error);
     return NextResponse.json(
       { error: "Could not add the link." },
       { status: 500 }

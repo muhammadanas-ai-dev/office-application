@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SharingClient } from "@/components/sharing/sharing-client";
 import { listShares } from "@/lib/sharing.server";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -43,7 +44,7 @@ export default async function SharePage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[share page]", error);
+    logError("share page", error);
     return (
       <EmptyState
         icon={FileWarning}

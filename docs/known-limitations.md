@@ -398,3 +398,20 @@ Updated: 2026-11-18 (Day 12)
   renders in the browser after the PDF loads (a client component),
   so the initial server HTML only carries the loading state.
 - No production release.
+
+## Redaction (F26)
+
+- Redaction removes text runs and images under the marked boxes and rebuilds the file with qpdf so removed image objects are gone from the file. Vector path drawings under a box are covered by the black box but their path data remains in the content stream.
+- A text run is removed whole when a box touches its estimated box — a few extra characters next to a box may be removed with it, never fewer.
+- Redaction saves a new version; earlier versions still contain the original content. Redact the version you share, and delete earlier versions if the content must be gone from Forma too.
+
+## Appearance (F32)
+
+- The dark theme remaps Forma's own palette tokens; third-party surfaces (the ONLYOFFICE editor) keep their own theme.
+- The language preference sets the page language and date/number formatting. Translating the whole interface is a later step.
+- Appearance persistence needs the F32 columns on `profiles` (in the combined SQL file delivered at the end of the checklist completion run); before that, Settings shows a setup notice and defaults apply.
+
+## Fonts (F33)
+
+- Uploaded fonts are embedded subset into PDFs drawn with them. Real readers (including Forma's viewer, which uses PDF.js) read the text correctly, but Forma's own server-side text extractor cannot decode subset-font encodings, so that text is invisible to Forma's PDF text search and text extraction.
+- Uploaded fonts apply to Forma's PDF tools only; the document editor (ONLYOFFICE) uses its own font set.

@@ -24,6 +24,7 @@ import { fetchDocumentPdf } from "@/lib/pdf-tools.server";
 import { PdfToolsError } from "@/lib/pdf-ops";
 import { isEncryptedPdf } from "@/lib/pdf-security";
 import { PdfSecurityError, unlockPdf } from "@/lib/pdf-security.server";
+import { logError } from "@/lib/log";
 
 const UnlockBody = z.object({
   password: z.string().min(1, "Enter the password.").max(128),
@@ -101,7 +102,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf unlock]", error);
+    logError("pdf unlock", error);
     return NextResponse.json(
       { error: "Could not unlock this PDF." },
       { status: 500 }

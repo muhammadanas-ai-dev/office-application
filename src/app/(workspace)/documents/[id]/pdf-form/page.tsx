@@ -19,6 +19,7 @@ import { PdfFormClient } from "@/components/pdf-form/pdf-form-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import { listPdfFormFields, type PdfFormField } from "@/lib/pdf-form.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -51,7 +52,7 @@ export default async function PdfFormPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-form page]", error);
+    logError("pdf-form page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -98,7 +99,7 @@ export default async function PdfFormPage({
       fields = await listPdfFormFields(bytes);
     }
   } catch (error) {
-    console.error("[pdf-form page] file read", error);
+    logError("pdf-form page file read", error);
     fieldsError =
       error instanceof Error ? error.message : "Could not read this PDF.";
   }

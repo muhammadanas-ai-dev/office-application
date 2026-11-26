@@ -27,6 +27,12 @@ import {
   MIN_ADDED_TEXT_SIZE,
   addTextToPdf,
 } from "@/lib/pdf-page-tools";
+import {
+  fetchUserFont,
+  fetchUserFontBytes,
+  touchUserFont,
+} from "@/lib/user-fonts.server";
+import { logError } from "@/lib/log";
 
 const AddTextBody = z.object({
   page: z.number().int().min(1),
@@ -34,7 +40,8 @@ const AddTextBody = z.object({
   y: z.number().finite(),
   text: z.string().min(1, "Enter the text to add.").max(MAX_ADDED_TEXT_CHARS),
   size: z.number().int().min(MIN_ADDED_TEXT_SIZE).max(MAX_ADDED_TEXT_SIZE),
-  font: z.enum(["helvetica", "times", "courier"]),
+  font: z.enum(["helvetica", "times", "courier", "custom"]),
+  fontId: z.string().uuid().optional(),
   color: z.enum(["black", "grey", "red", "green", "blue"]),
 });
 
@@ -79,8 +86,26 @@ export async function POST(
     const userClient = await getToolsClient();
     const document = await fetchEditableDocument(userClient, id);
     const { bytes } = await fetchDocumentPdf(userClient, id);
-    const added = await addTextToPdf(bytes, parsed.data);
+    let customFontBytes: Uint8Array | undefined;
+    if (parsed.data.font === "custom") {
+      if (!parsed.data.fontId) {
+        return NextResponse.json(
+          { error: "Choose one of your uploaded fonts." },
+          { status: 400 }
+        );
+      }
+      const font = await fetchUserFont(
+        userClient,
+        user.id,
+        parsed.data.fontId
+      );
+      customFontBytes = await fetchUserFontBytes(font);
+    }
+    const added = await addTextToPdf(bytes, parsed.data, customFontBytes);
     const version = await saveNewVersion(document, user.id, added);
+    if (parsed.data.font === "custom" && parsed.data.fontId) {
+      await touchUserFont(userClient, parsed.data.fontId);
+    }
     return editJsonResponse({
       version,
       documentId: document.id,
@@ -93,7 +118,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf add-text]", error);
+    logError("pdf add-text", error);
     return NextResponse.json(
       { error: "Could not add the text." },
       { status: 500 }

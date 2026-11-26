@@ -143,3 +143,107 @@
     @apply font-sans;
   }
 }
+
+/* ------------------------------------------------------------------
+   Appearance layer (F32): dark theme + accessibility preferences.
+   The classes are set on <html> from the user's profile
+   preferences (workspace layout script + the settings form).
+   Forma's palette is a small set of fixed tokens, so the dark
+   theme remaps those tokens. Unlayered on purpose: these rules
+   must win over the layered utilities.
+   ------------------------------------------------------------------ */
+html.forma-larger-text {
+  font-size: 18px;
+}
+html.forma-reduce-motion *,
+html.forma-reduce-motion *::before,
+html.forma-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+html.forma-high-contrast .text-\[\#667389\] {
+  color: #44536b;
+}
+html.forma-high-contrast .border-\[\#dce3ec\] {
+  border-color: #94a3b8;
+}
+
+html.forma-dark {
+  color-scheme: dark;
+}
+html.forma-dark body {
+  background-color: #11161d;
+}
+html.forma-dark .bg-white {
+  background-color: #1c2534;
+}
+html.forma-dark .bg-\[\#f4f6fa\] {
+  background-color: #11161d;
+}
+html.forma-dark .text-\[\#202b3c\],
+html.forma-dark .text-\[\#1d2733\] {
+  color: #e9eef6;
+}
+html.forma-dark .text-\[\#667389\] {
+  color: #a3b0c2;
+}
+html.forma-dark .text-\[\#3159c9\] {
+  color: #7ea2f0;
+}
+html.forma-dark .border-\[\#dce3ec\] {
+  border-color: #2f3c50;
+}
+html.forma-dark .divide-\[\#eef1f6\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2f3c50;
+}
+html.forma-dark .bg-\[\#eef1f6\] {
+  background-color: #2f3c50;
+}
+html.forma-dark.forma-high-contrast .text-\[\#667389\] {
+  color: #c3cedd;
+}
+html.forma-dark.forma-high-contrast .border-\[\#dce3ec\] {
+  border-color: #5b6c85;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.forma-theme-system {
+    color-scheme: dark;
+  }
+  html.forma-theme-system body {
+    background-color: #11161d;
+  }
+  html.forma-theme-system .bg-white {
+    background-color: #1c2534;
+  }
+  html.forma-theme-system .bg-\[\#f4f6fa\] {
+    background-color: #11161d;
+  }
+  html.forma-theme-system .text-\[\#202b3c\],
+  html.forma-theme-system .text-\[\#1d2733\] {
+    color: #e9eef6;
+  }
+  html.forma-theme-system .text-\[\#667389\] {
+    color: #a3b0c2;
+  }
+  html.forma-theme-system .text-\[\#3159c9\] {
+    color: #7ea2f0;
+  }
+  html.forma-theme-system .border-\[\#dce3ec\] {
+    border-color: #2f3c50;
+  }
+  html.forma-theme-system .divide-\[\#eef1f6\] > :not([hidden]) ~ :not([hidden]) {
+    border-color: #2f3c50;
+  }
+  html.forma-theme-system .bg-\[\#eef1f6\] {
+    background-color: #2f3c50;
+  }
+  html.forma-theme-system.forma-high-contrast .text-\[\#667389\] {
+    color: #c3cedd;
+  }
+  html.forma-theme-system.forma-high-contrast .border-\[\#dce3ec\] {
+    border-color: #5b6c85;
+  }
+}

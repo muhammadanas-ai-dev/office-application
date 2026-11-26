@@ -4,6 +4,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureProfileAndWorkspace } from "@/features/auth/provision";
+import { logError } from "@/lib/log";
 
 function safeNext(value: string | null): string {
   if (value && value.startsWith("/") && !value.startsWith("//")) return value;
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    console.error("auth callback exchange failed:", error.message);
+    logError("auth callback", error.message, "exchange failed");
     return NextResponse.redirect(loginUrl);
   }
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (provisionError) {
     // The session is valid; provisioning retries on the next sign-in.
-    console.error("provisioning failed in auth callback:", provisionError);
+    logError("auth callback", provisionError, "provisioning failed");
   }
 
   return NextResponse.redirect(new URL(next, request.url));

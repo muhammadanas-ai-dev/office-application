@@ -66,7 +66,43 @@ the owner's instruction of 2026-11-18; Supabase Storage stays
 | 16 | Stamps / watermarks (a text watermark, an image watermark and a rubber stamp on PDF pages) | **Done (Day 32 — unit 432/432; live e2e 18/18, closed 2026-11-24)** |
 | 17 | Insert pages from an image (each uploaded PNG/JPEG becomes a new page) | **Done (Day 33 — unit 436/436; live e2e 16/16, closed 2026-11-25)** |
 | 18 | Export with comments + local reviewer notes (the Day 25 half) | **Done (Day 34 — export live e2e 13/13; the notes round-trip runs after the owner applies the migration)** |
+| 19 | Small leftovers: delete the /plan route + the console.error → logError sweep | In progress (2026-11-26 run) |
+| 20 | PDF text search (per-page search API + UI) | **Done (F20, 2026-11-26 — unit 10 new; live e2e 9/9)** |
+| 21 | PDF outline/bookmarks + reading modes + thumbnails/zoom finish (viewer) | **Done (F21, 2026-11-26 — outline resolver unit 4/4; regression e2e 4/4; canvas rendering is browser-side, not pixel-verified from the VM)** |
+| 22 | Extract embedded images from PDF | **Done (F22, 2026-11-26 — live e2e 5/5)** |
+| 23 | Extract tables from PDF (CSV download as a ZIP of CSVs) | **Done (F23, 2026-11-26 — unit 7 new; live e2e 6/6)** |
+| 24 | Export PDF to XLSX (text-based) | **Done (F24, 2026-11-26 — unit 5 new; live e2e 7/7)** |
+| 25 | Export PDF to PPTX (text-based) | **Done (F25, 2026-11-26 — unit 5 new; live e2e 6/6)** |
+| 26 | Redaction (permanently remove content under regions) | **Done (F26, 2026-11-26 — unit 7 new; live e2e 8/8)** |
+| 27 | Page resize tools | **Done (F27, 2026-11-26 — unit 4 new; live e2e 8/8)** |
+| 28 | Batch conversion (multiple files through the PDF tools) | **Done (F28, 2026-11-26 — unit 3 new; live e2e 8/8)** |
+| 29 | Document properties / metadata view + edit | **Done (F29, 2026-11-26 — unit 4 new; live e2e 8/8)** |
+| 30 | Import annotations from another PDF | **Done (F30, 2026-11-26 — unit 2 new; live e2e 7/7)** |
+| 31 | Print reviewed document (print view) | **Done (F31, 2026-11-26 — live e2e 4/4)** |
+| 32 | Settings pack: theme, locale/date/number formats, shortcut reference, accessibility preferences | **Done (F32, 2026-11-26 — unit 4 new (10 in preferences); live e2e 7/7; persistence activates with the combined SQL)** |
+| 33 | Fonts: user font upload + favourites/recently used | **Done (F33, 2026-11-26 — unit 4 new; live e2e 5/5; table in the combined SQL)** |
+| 34 | Long-tail formats (WEBP/TIFF images to PDF; honest limits where the docserver is required) | **Done (F34, 2026-11-26 — unit 6 new; live e2e 4/4; bucket SQL in the combined file). DOCM/RTF/PDF-A and TIFF/BMP/GIF/SVG as document formats stay with the docserver (blocked)** |
+| 35 | Draft auto-save + recovery (buildable slice only; the editor-dependent part waits for the docserver) | **Done (buildable slice) (F35, 2026-11-26 — unit 4 new; live e2e 4/4). Editor-document local drafts stay with the editor's server autosave (docserver)** |
+
+**The 2026-11-26 completion run (owner instruction):** build
+every remaining buildable checklist feature, one by one, each
+through the full loop (research → plan → implement → test),
+production-grade, without stopping. Excluded by the owner:
+the blocked items (the docserver reinstall, the Vercel
+deploy), all AI features, all cloud/collaboration/billing
+features, and anything that needs a permission he has not
+given (leave that feature and move on). **No GitHub push
+during this run** (local commits only). **All SQL migrations
+from this run are delivered to the owner as ONE combined
+file at the very end**, proper and correct, instead of one
+file per feature.
 
 E-signatures are deferred (needs a legal/verification decision).
 No billing until merchant eligibility/tax/compliance is verified.
 The owner can reorder the queue; the loop stays the same.
+
+## Completion run additions (2026-11-26, audit reconciliation)
+
+| 36 | Batch page operations (rotate/compress many PDFs) + PDF repair (qpdf rebuild) | **Done (F36, 2026-11-26 — unit 2 new; live e2e 6/6)** |
+| 37 | PDF page labels | **Done (F37, 2026-11-26 — unit 4 new; live e2e 5/5)** |
+| 38 | Insert an image onto existing PDF pages | **Done (F38, 2026-11-26 — unit 2 new (47 in pdf-page-tools); live e2e 5/5)** |

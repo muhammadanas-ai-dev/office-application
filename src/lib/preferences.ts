@@ -90,3 +90,20 @@ export function getExportImagesHref(
   const query = params.toString();
   return `/api/documents/${documentId}/pdf/export-images${query ? `?${query}` : ""}`;
 }
+
+export {
+  THEMES,
+  LOCALES,
+  DATE_FORMATS,
+  NUMBER_FORMATS,
+  DEFAULT_APPEARANCE,
+  withDefaultAppearance,
+  appearanceHtmlClasses,
+  formatNumberWithPreference,
+  formatDateWithPreference,
+  type ThemePreference,
+  type LocalePreference,
+  type DateFormatPreference,
+  type NumberFormatPreference,
+  type AppearancePreferences,
+} from "@/lib/appearance";

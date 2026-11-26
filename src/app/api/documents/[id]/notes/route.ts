@@ -15,6 +15,7 @@ import {
   getNotesUser,
   listNotes,
 } from "@/lib/document-notes.server";
+import { logError } from "@/lib/log";
 
 const CreateNoteBody = z.object({
   body: z.string(),
@@ -27,7 +28,7 @@ function errorResponse(error: unknown): NextResponse {
       { status: error.status }
     );
   }
-  console.error("[notes]", error);
+  logError("notes", error);
   return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
 

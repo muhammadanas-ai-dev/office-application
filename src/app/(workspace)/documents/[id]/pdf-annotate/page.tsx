@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PdfAnnotateClient } from "@/components/pdf-annotate/pdf-annotate-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -50,7 +51,7 @@ export default async function PdfAnnotatePage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-annotate page]", error);
+    logError("pdf-annotate page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -94,8 +95,20 @@ export default async function PdfAnnotatePage({
       pageCount = await countPdfPages(bytes);
     }
   } catch (error) {
-    console.error("[pdf-annotate page] file read", error);
+    logError("pdf-annotate page file read", error);
   }
+
+  // Other PDFs in the same workspace, for importing comments.
+  const { data: otherPdfs } = await supabase
+    .from("documents")
+    .select("id, title")
+    .eq("workspace_id", document.workspace_id)
+    .eq("mime_type", "application/pdf")
+    .is("deleted_at", null)
+    .neq("id", id)
+    .not("file_path", "is", null)
+    .order("title")
+    .limit(50);
 
   return (
     <PdfAnnotateClient
@@ -105,6 +118,10 @@ export default async function PdfAnnotatePage({
         version: document.version,
       }}
       pageCount={pageCount}
+      otherPdfs={(otherPdfs ?? []).map((pdf) => ({
+        id: pdf.id,
+        title: pdf.title,
+      }))}
     />
   );
 }

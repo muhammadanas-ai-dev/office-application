@@ -39,6 +39,7 @@ import {
   WATERMARK_ROTATIONS,
 } from "@/lib/pdf-stamp";
 import { MAX_ADDED_TEXT_SIZE, MIN_ADDED_TEXT_SIZE } from "@/lib/pdf-page-tools";
+import { logError } from "@/lib/log";
 
 const TextWatermarkBody = z.object({
   kind: z.literal("text"),
@@ -197,7 +198,7 @@ export async function POST(
         { status: error.status }
       );
     }
-    console.error("[pdf add-watermark]", error);
+    logError("pdf add-watermark", error);
     return NextResponse.json(
       { error: "Could not add the watermark." },
       { status: 500 }

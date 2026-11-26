@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PdfDrawClient } from "@/components/pdf-draw/pdf-draw-client";
 import { countPdfPages } from "@/lib/pdf-tools.server";
 import Link from "next/link";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -48,7 +49,7 @@ export default async function PdfDrawPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[pdf-draw page]", error);
+    logError("pdf-draw page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -92,11 +93,52 @@ export default async function PdfDrawPage({
       pageCount = await countPdfPages(bytes);
     }
   } catch (error) {
-    console.error("[pdf-draw page] file read", error);
+    logError("pdf-draw page file read", error);
   }
+
+  // The user's uploaded fonts for the Add-text picker
+  // (F33). A missing table (migration pending) simply means
+  // no custom fonts yet.
+  let userFonts: { id: string; name: string; isFavourite: boolean }[] = [];
+  try {
+    const { data: fontRows } = await supabase
+      .from("user_fonts")
+      .select("id, name, is_favourite, last_used_at")
+      .eq("user_id", user.id)
+      .order("is_favourite", { ascending: false })
+      .order("last_used_at", { ascending: false, nullsFirst: false })
+      .order("name")
+      .limit(50);
+    userFonts = (fontRows ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      isFavourite: row.is_favourite,
+    }));
+  } catch {
+    userFonts = [];
+  }
+
+  // Image documents in this workspace, for Insert image
+  // (F38). Missing rows simply mean an empty picker.
+  const { data: imageRows } = await supabase
+    .from("documents")
+    .select("id, title")
+    .eq("workspace_id", document.workspace_id)
+    .in("mime_type", ["image/png", "image/jpeg", "image/webp", "image/tiff"])
+    .is("deleted_at", null)
+    .not("file_path", "is", null)
+    .order("title")
+    .limit(50);
+  const imageDocs = (imageRows ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+  }));
 
   return (
     <PdfDrawClient
+      images={imageDocs}
+      userId={user.id}
+      userFonts={userFonts}
       document={{
         id: document.id,
         title: document.title,

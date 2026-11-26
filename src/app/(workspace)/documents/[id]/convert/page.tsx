@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ConvertClient } from "@/components/convert/convert-client";
 import { getEditorFileType } from "@/lib/editor";
 import { getConvertibleTargets, getFormatLabel } from "@/lib/convert";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -47,7 +48,7 @@ export default async function ConvertPage({
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
-    console.error("[convert page]", error);
+    logError("convert page", error);
     return (
       <EmptyState
         icon={FileWarning}

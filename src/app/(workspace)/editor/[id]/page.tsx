@@ -17,6 +17,7 @@ import { EditorClient } from "@/components/editor/editor-client";
 import { RegisterOpenDocument } from "@/components/layout/document-tabs";
 import { FileWarning } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { logError } from "@/lib/log";
 
 function BackToFiles() {
   return (
@@ -49,7 +50,7 @@ export default async function EditorPage({
     .maybeSingle();
 
   if (error) {
-    console.error("[editor page]", error);
+    logError("editor page", error);
     return (
       <EmptyState
         icon={FileWarning}
@@ -124,7 +125,7 @@ export default async function EditorPage({
         />
       );
     }
-    console.error("[editor page]", error);
+    logError("editor page", error);
     return (
       <EmptyState
         icon={FileWarning}

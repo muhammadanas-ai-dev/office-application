@@ -37,7 +37,12 @@ export const A4_WIDTH_PT = PageSizes.A4[0];
 export const A4_HEIGHT_PT = PageSizes.A4[1];
 
 /** The image formats the app stores (and images-to-PDF accepts). */
-export const IMAGE_TO_PDF_MIME_TYPES = ["image/png", "image/jpeg"] as const;
+export const IMAGE_TO_PDF_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/tiff",
+] as const;
 
 function isPng(bytes: Uint8Array): boolean {
   return (
@@ -94,6 +99,12 @@ export function fitImageInPage(
 export function getImageExportFileName(title: string): string {
   const base = title.replace(/\.[^.]+$/, "").trim() || "document";
   return `${base}-images.zip`;
+}
+
+/** The ZIP file name for a PDF's extracted embedded images. */
+export function getExtractImagesFileName(title: string): string {
+  const base = title.replace(/\.[^.]+$/, "").trim() || "document";
+  return `${base}-extracted-images.zip`;
 }
 
 /** The PDF file name for an images-to-PDF. */
